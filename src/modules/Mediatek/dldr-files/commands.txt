@@ -1,0 +1,11 @@
+Run from this folder, device in BROM mode (powered off, hold Vol keys, plug USB).
+Replace testXX with the test label (e.g. test57). No kernel/LK boot after the loops.
+ORDER MATTERS: pstore first (every command re-inits DRAM, which can wipe it).
+
+1) pstore DRAM (kernel logs):
+
+python mtk-client/mtk da peek 0x48090000 0xe0000 --preloader firmware/preloader_evergo.bin --filename output/ramoops-testXX.bin
+
+2) expdb (bootloader/tee logs, persistent flash):
+
+python mtk-client/mtk r expdb output/expdb-testXX.bin --preloader firmware/preloader_evergo.bin --loader firmware/MTK_AllInOne_DA.bin
