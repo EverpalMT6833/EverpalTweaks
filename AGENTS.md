@@ -196,6 +196,8 @@ EverpalTweaks/
     │   ├── decouple_libge2.py         # Vulkan 1.3 one-shot binary patch: DT_NEEDED libged.so -> libge2.so
     │   ├── decrypt_thermal.py         # Xiaomi OpenSSL AES-128-CBC encryption/decryption CLI
     │   ├── dumpboot.py                # ROM boot.img extractor (boot.img direct or payload.bin)
+    │   ├── brompull.py                # BROM evidence pull helper (see §9; host twin lives in EvergoBROM/)
+    │   ├── win2wsl.py                 # Host<->WSL path/file shuttle helper
     │   ├── synctrees.py               # Automated tree synchronizer for GitHub (FrontlXOX)
     │   └── verifydevice.py            # Live ADB hardware, Vulkan 1.3, frequency & kernel parameter audit CLI
     │
@@ -208,7 +210,7 @@ EverpalTweaks/
     │   │   └── xiaomi/                 # FrontlXOX Xiaomi hardware HAL (lineage-23.0)
     │   ├── kernel/
     │   │   └── xiaomi/mt6833/          # himanshuksr0007 Linux 4.14 kernel (lineage-24.0)
-    │   ├── kernel-5.10/                # MillenniumOSS MT6789-common donor kernel (vic branch)
+    │   ├── kernel-5.10/                # 5.10 port tree (branch muse_evergo) — see §9 Linux 5.10 Bringup
     │   └── vendor/
     │       ├── mediatek/ims/           # FrontlXOX MTK IMS vendor blobs (android-16-qpr2)
     │       ├── xiaomi/camera/          # himanshuksr0007 MIUI camera vendor blobs (lineage-23.2)
@@ -456,6 +458,7 @@ All agents working within this codebase must strictly observe these rules:
 11. 🌲 **Submodule GitHub Tracking:** All submodules in `src/trees/` track their designated GitHub repos as remote `origin`. Upstream synchronization (`src/scripts/synctrees.py`) pushes directly to `origin` on GitHub.
 12. 🤖 **Sub-Agent First Policy:** Before the parent agent makes any direct code edits, file writes, or tree modifications for non-trivial tasks, it MUST first delegate discovery, auditing, and research to specialized sub-agents. The parent agent acts as orchestrator — it reads sub-agent findings, synthesizes them, then and only then executes targeted changes. Direct parent-agent edits without prior sub-agent research are only acceptable for single-line fixes, typo corrections, or trivially scoped changes confirmed at a glance.
 13. 🛑 **Flashable Script Encoding Hygiene:** All shell scripts shipped inside flashable zips (`anykernel.sh`, `META-INF/com/google/android/update-binary`, `updater-script`) MUST be pure LF, ASCII, and free of BOM/garbage-byte prefixes. CRLF line endings break the recovery shebang (`#!/sbin/sh^M` → "bad interpreter" → instant sideload abort), and stray non-ASCII bytes (e.g. U+3002 `。` from a bad editor save) become fatal commands under `set -e`. Verify with `file` (must NOT say "with CRLF"), `grep -c $'\r'` (must be 0), and `sh -n` before zipping.
+14. 🛑 **Scratch & Output Placement:** All build-related scratch/temp work goes in `./build/` and all outputs in `./out/`. Never use `/tmp/opencode` (or other system temp dirs) for repo work — contents vanish on reboot and are invisible to the user.
 
 ---
 
@@ -493,3 +496,47 @@ Complete and validate each phase before progressing to the next.
 - **No polling loops** — NEVER use `schedule` or `manage_task(status)` in a loop to wait for background tasks.
 - **Reactive wakeup** — After launching background commands or sub-agents, end the turn. The system notifies on completion.
 - **User-driven stalls** — If a task gets stuck, wait for the user to report it.
+
+---
+
+## 9. Linux 5.10 Bringup (everpal — active workstream)
+
+5.10 port tree: `src/trees/kernel-5.10`, branch **`muse_evergo`** (gold donor base). Current base ROM is **AlphaDroid** (`out/AlphaDroid_AospBOOT.img`: hv2, page 2048, base `0x40000000`, k_offset `0x80000`, ramdisk `0x11100000`, tags/dtb `0x7c80000`, os 16.0.0/2026-05, AVB SHA256_RSA2048 rollback 1, salt `0c4a3d71…`, ramdisk 18,443,389 B, stock DTB 170,672 B). Prior Axion base is retired. Debug cmdline carried on every test image: stock bootopt + `androidboot.selinux=permissive hung_task_timeout_secs=8 watchdog_thresh=5 printk.devkmsg=on initcall_debug console=ttyS0,921600n1`.
+
+### Test cycle (flash-based only; `fastboot boot` unsupported)
+
+```bash
+fastboot erase misc; fastboot flash boot_a boot.img; fastboot flash boot_b boot.img; fastboot --set-active=b; fastboot reboot;
+```
+
+3 hands-off loops (`fastboot reboot` between attempts, no keys) → straight to BROM (keys, no kernel/LK boot) → pulls below → restore → boot system. `--set-active=b` is load-bearing: ROM lives on slot B; slot A has no system (boots landing on A die on empty `system_a`). `erase misc` every round (Rescue Party poisons BCB → recovery-mode boots). Archive every test image in `out/Archive/` (user moves images off-machine; `out/` is gitignored). Every version gets a TL;DR for the user.
+
+### Evidence pipeline (BROM; root/adb no longer used for pulls)
+
+Host kit: `C:\Users\psycosis\Downloads\EvergoBROM\` (`commands.txt` = source of truth, `firmware/` = evergo preloader + DA + auth, `mtk-client/`, `output/`). Fixed host names (`expdb.bin` 40MB, `ramoops.bin` 896K, overwrite per round); WSL files them as `out/bromPull/testXX/{expdb,ramoops}-testXX.bin`. Order matters — DRAM first:
+
+```bash
+python mtk-client/mtk da peek 0x48090000 0xe0000 --preloader firmware/preloader_evergo.bin --filename output/ramoops.bin
+python mtk-client/mtk r expdb output/expdb.bin --preloader firmware/preloader_evergo.bin --loader firmware/MTK_AllInOne_DA.bin
+```
+
+- `peek` (preloader mode) is BANNED — hangs on PreLoader VCOM re-enumeration. `da peek` (DA mode) is the working DRAM path.
+- `da` subcommands accept no `--loader`; `mtk-client/Loader/MTK_AllInOne_DA_5.2152.bin` holds a copy of the proven evergo DA (original kept as `.bak`). Revert: `cp mtk-client/Loader/MTK_AllInOne_DA_5.2152.bin.bak mtk-client/Loader/MTK_AllInOne_DA_5.2152.bin`.
+- `printgpt` offsets are byte offsets; `rs` units are 4096-byte sectors; `ro` byte reads of some regions return zeros (use `rs`, verify non-zero).
+- expdb holds preloader/TEE/LK logs only — kernel evidence lives in pstore DRAM (`0x48090000`, LK-passed DTB region). Anchor multi-record pulls by content (banner hash), never file order. Branches: `muse_evergo` (kernel), `main` (repo).
+
+### Bugs killed (test57→test65)
+
+1. Gold DTB → LK `panic: ASSERT boot_info.c:61 g_boot_info.img_loaded` after a metronomic 5736ms load; kernel never starts. Fix: ship **stock DTB** (test59+). Gold DTB is unproven on Axion/AlphaDroid LK.
+2. Stock DTB lacks serial console (gold had none either; stock has `ttyS0`). Fix: `console=ttyS0,921600n1` on cmdline (test58+).
+3. `dm-verity: Invalid number of feature args` → `InitFatalReboot` on `/system`. Android 16 sends 10 opt args (FEC); `DM_VERITY_FEC` was off (cap 3). Fix: `CONFIG_DM_VERITY_FEC=y` (test60, commit `4e73c04`).
+4. Broken `mt6833.dtb` build: everpal header edit removed IFRAO clock IDs 61/63 but two `.dtsi` files still referenced them. Fix: dropped the 4 dangling lines (same commit).
+5. CRNG never seeds (`crng init done` absent, ~50 uninitialized reads) → keystore2 never registers → vold waits → no zygote. TRNG is secure-only (DEVAPC blocks AP MMIO reads — `mtk-rng` on `trng` yields violations, reverted approach). Mitigations shipped: `HW_RANDOM_MTK=y` + `trng` bind (test62, commit `f81dbac`), DT `rng-seed` in `/chosen` (test63; `RANDOM_TRUST_BOOTLOADER` already y, warnings 40→7). DTB path proven via `rngtest=63` marker in `/init` environ (test64).
+6. **Current blocker (test64/65):** keystore2 starts, never registers `IKeystoreService`; vold waits forever; no zygote/boot_completed. Test65 adds `hung_task_panic=1` to catch a D-state hang with full stacks via mrdump. If S-state, next instrument is kernel-side trusty IPC tracing. adbd never starts (no live logs); ramdisk-rc injection impossible (first-stage parses no rc; second-stage rc comes from mounted system).
+7. Current kernel: `5.10.168` + evergo panel/touch commits; defconfig deltas live in `everpal_510_defconfig` (UNIX/cgroups/loop-16/blk_cgroup/bpf/FEC/HW_RANDOM_MTK).
+
+### Build environment (hard-won)
+
+- Proven: `clang-r416183b` (`build/toolchains/`) on PATH, `CC="ccache clang" LLVM=1 LLVM_IAS=1`, NO `LD=` override (it breaks kconfig linker probe), NO repo-script `KCFLAGS` (clang-22-only warning flag). ZyC-22 turns new warnings (`default-const-init-field-unsafe`, `bitwise-instead-of-logical`, `strict-prototypes`) into errors — do not mix toolchains mid-tree.
+- After defconfig edits: `make O=out everpal_510_defconfig && make O=out olddefconfig`, then `-j` build. `syncconfig` passes standalone; `-j` races on the kconfig tool are environmental noise.
+- Scratch/build temp → `./build/`; outputs → `./out/`. Never `/tmp/opencode`.
