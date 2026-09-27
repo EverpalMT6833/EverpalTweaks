@@ -2,6 +2,7 @@ out/
 *.tmp
 *.env
 *.log
+ofox/
 build/
 *.db-wal
 scratch/
