@@ -52,7 +52,7 @@ def pad_file(f, padding):
 
 def get_number_of_pages(image_size, page_size):
     """calculates the number of pages required for the image"""
-    return (image_size + page_size - 1) / page_size
+    return (image_size + page_size - 1) // page_size
 
 
 def get_recovery_dtbo_offset(args):
