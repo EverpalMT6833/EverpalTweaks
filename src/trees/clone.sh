@@ -30,20 +30,20 @@ clone() {
 }
 
 TREES=(
-    "src/trees/device/xiaomi/everpal|https://github.com/himanshuksr0007/device_xiaomi_everpal.git|src/trees/device/xiaomi/everpal|lineage-23.2"
-    "src/trees/vendor/xiaomi/everpal|https://github.com/himanshuksr0007/vendor_xiaomi_everpal.git|src/trees/vendor/xiaomi/everpal|lineage-23.2"
-    "src/trees/vendor/xiaomi/camera|https://github.com/himanshuksr0007/vendor_xiaomi_camera-everpal.git|src/trees/vendor/xiaomi/camera|lineage-23.2"
-    "src/trees/kernel/xiaomi/mt6833|https://github.com/himanshuksr0007/android_kernel_xiaomi_mt6833.git|src/trees/kernel/xiaomi/mt6833|lineage-24.0"
+    "src/trees/device/xiaomi/everpal|https://github.com/FrontlXOX/device_xiaomi_everpal.git|src/trees/device/xiaomi/everpal|lineage-23.2"
+    "src/trees/vendor/xiaomi/everpal|https://github.com/FrontlXOX/vendor_xiaomi_everpal.git|src/trees/vendor/xiaomi/everpal|lineage-23.2"
+    "src/trees/vendor/xiaomi/camera|https://github.com/FrontlXOX/vendor_xiaomi_camera-everpal.git|src/trees/vendor/xiaomi/camera|lineage-23.2"
+    "src/trees/kernel/xiaomi/mt6833|https://github.com/FrontlXOX/android_kernel_xiaomi_mt6833.git|src/trees/kernel/xiaomi/mt6833|lineage-24.0"
     "src/trees/device/mediatek/sepolicy_vndr|https://github.com/FrontlXOX/android_device_mediatek_sepolicy_vndr.git|src/trees/device/mediatek/sepolicy_vndr|lineage-23.0"
     "src/trees/hardware/mediatek|https://github.com/FrontlXOX/android_hardware_mediatek.git|src/trees/hardware/mediatek|lineage-23.0"
     "src/trees/hardware/xiaomi|https://github.com/FrontlXOX/android_hardware_xiaomi.git|src/trees/hardware/xiaomi|lineage-23.0"
     "src/trees/vendor/mediatek/ims|https://github.com/FrontlXOX/android_vendor_mediatek_ims.git|src/trees/vendor/mediatek/ims|android-16-qpr2"
 )
 
-clone "https://github.com/himanshuksr0007/device_xiaomi_everpal.git"        "device/xiaomi/everpal"            "lineage-23.2"
-clone "https://github.com/himanshuksr0007/vendor_xiaomi_everpal.git"        "vendor/xiaomi/everpal"            "lineage-23.2"
-clone "https://github.com/himanshuksr0007/vendor_xiaomi_camera-everpal.git" "vendor/xiaomi/camera"            "lineage-23.2"
-clone "https://github.com/himanshuksr0007/android_kernel_xiaomi_mt6833.git" "kernel/xiaomi/mt6833"             "lineage-24.0"
+clone "https://github.com/FrontlXOX/device_xiaomi_everpal.git"        "device/xiaomi/everpal"            "lineage-23.2"
+clone "https://github.com/FrontlXOX/vendor_xiaomi_everpal.git"        "vendor/xiaomi/everpal"            "lineage-23.2"
+clone "https://github.com/FrontlXOX/vendor_xiaomi_camera-everpal.git" "vendor/xiaomi/camera"            "lineage-23.2"
+clone "https://github.com/FrontlXOX/android_kernel_xiaomi_mt6833.git" "kernel/xiaomi/mt6833"             "lineage-24.0"
 clone "https://github.com/FrontlXOX/android_device_mediatek_sepolicy_vndr.git" "device/mediatek/sepolicy_vndr" "lineage-23.0"
 clone "https://github.com/FrontlXOX/android_hardware_mediatek.git"          "hardware/mediatek"              "lineage-23.0"
 clone "https://github.com/FrontlXOX/android_hardware_xiaomi.git"            "hardware/xiaomi"                "lineage-23.0"
