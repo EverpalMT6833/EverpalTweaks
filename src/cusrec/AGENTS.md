@@ -154,115 +154,72 @@ The active boot slot is governed by a 16-byte binary payload located at byte off
 
 ---
 
-## 5. Explicit Dual-Slot GUI & Dynamic Labeling
+## 5. Dual-Slot Boot Enforcement & Clean Standard GUI
 
-The TWRP Reboot menu has been overhauled to provide explicit, granular control over both hardware slots. It eliminates guesswork by utilizing TWRP's internal runtime variables to dynamically identify slot allocations.
+To prevent users from becoming trapped in a recovery loop or booting an uninitialized slot, TWRP implements an **Enforced AOSP Boot Strategy**:
 
-### Dynamic XML Implementation (`twres/portrait.xml`)
+1. **Clean Standard GUI:** The custom split buttons have been eliminated in favor of TWRP's standard, uncluttered Reboot menu (`System`, `Power Off`, `Recovery`, `Bootloader`, `Fastboot`).
+2. **Default AOSP Target:** Every standard reboot action (`Reboot System` and `Reboot Recovery`) as well as unexpected reboots/crashes automatically route to **Slot A (AOSP)**.
+3. **Manual Override via Slot Switcher:** Users only boot or reboot into Slot B (TWRP) if they navigate to the Reboot menu and explicitly tap the **`Slot B`** button.
 
-```xml
-<listbox style="advanced_listbox">
-    <placement x="%indent%" y="%row2a_y%" w="%content_width%" h="%listbox_advanced_height%"/>
+### Automatic AOSP Enforcement on Startup (`system/bin/unified-script.sh`)
 
-    <!-- ACTIVE WHEN TWRP IS RUNNING ON SLOT B -->
-    <listitem name="System (SLOT A - AOSP)">
-        <condition var1="tw_active_slot" var2="B"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=cmd</action>
-            <action function="set">tw_action_param=/system/bin/custom_reboot.sh system a</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
+On every TWRP boot, `unified-script.sh` automatically arms MediaTek `/misc` offset 2048 to point to Slot A:
 
-    <listitem name="System (SLOT B - TWRP)">
-        <condition var1="tw_active_slot" var2="B"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=cmd</action>
-            <action function="set">tw_action_param=/system/bin/custom_reboot.sh system b</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
+```bash
+# Auto-clear BCB in misc to guarantee zero boot-recovery loops
+dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1 2>/dev/null
+dd if=/dev/zero of=/dev/block/platform/bootdevice/by-name/misc bs=2048 count=1 2>/dev/null
 
-    <!-- ACTIVE WHEN TWRP IS RUNNING ON SLOT A -->
-    <listitem name="System (SLOT A - TWRP)">
-        <condition var1="tw_active_slot" var2="A"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=cmd</action>
-            <action function="set">tw_action_param=/system/bin/custom_reboot.sh system a</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
-
-    <listitem name="System (SLOT B - AOSP)">
-        <condition var1="tw_active_slot" var2="A"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=cmd</action>
-            <action function="set">tw_action_param=/system/bin/custom_reboot.sh system b</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
-
-    <listitem name="{@rb_poweroff_btn=Power Off}">
-        <condition var1="tw_reboot_poweroff" var2="1"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=reboot</action>
-            <action function="set">tw_action_param=poweroff</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
-
-    <!-- RECOVERY SLOTS & FASTBOOT/BOOTLOADER TARGETS -->
-    <listitem name="Recovery (SLOT A - AOSP)">
-        <condition var1="tw_active_slot" var2="B"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=cmd</action>
-            <action function="set">tw_action_param=/system/bin/custom_reboot.sh recovery a</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
-
-    <listitem name="Recovery (SLOT B - TWRP)">
-        <condition var1="tw_active_slot" var2="B"/>
-        <actions>
-            <action function="set">tw_back=reboot</action>
-            <action function="set">tw_action=cmd</action>
-            <action function="set">tw_action_param=/system/bin/custom_reboot.sh recovery b</action>
-            <action function="page">rebootcheck</action>
-        </actions>
-    </listitem>
-</listbox>
+# Always arm Slot A (AOSP) by default on TWRP boot
+printf "_a\0\0BCAB\x01\x02\0\0\xef\0\x2e\0" | dd of=/dev/block/by-name/misc bs=1 seek=2048 count=16 conv=notrunc 2>/dev/null
+rm -f /tmp/manual_slot_selected 2>/dev/null
 ```
 
-### Master Execution Script (`system/bin/custom_reboot.sh`)
+### Manual Slot Override Hook (`system/bin/setslot.sh`)
+
+When the user taps `Slot A` or `Slot B` in the TWRP Reboot menu, `portrait.xml` executes `/system/bin/setslot.sh [A|B]`:
 
 ```bash
 #!/system/bin/sh
-TYPE=$1  # "system" or "recovery"
-SLOT=$2  # "a" or "b"
-
-# 1. Zero out standard BCB to eliminate bootloader conflict panics
-dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
-dd if=/dev/block/platform/bootdevice/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
-
-# 2. Inject verified MediaTek BCAB slot selection struct at offset 2048
-if [ "$SLOT" = "a" ]; then
-    printf "_a\0\0BCAB\x01\x02\0\0\xef\0\x2e\0" | dd of=/dev/block/by-name/misc bs=1 seek=2048 count=16 conv=notrunc 2>/dev/null
-elif [ "$SLOT" = "b" ]; then
+TARGET=$1
+if [ "$TARGET" = "B" ] || [ "$TARGET" = "b" ]; then
+    echo "B" > /tmp/manual_slot_selected
+    dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
+    dd if=/dev/zero of=/dev/block/platform/bootdevice/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
     printf "_b\0\0BCAB\x01\x02\0\0\xee\0\xef\0" | dd of=/dev/block/by-name/misc bs=1 seek=2048 count=16 conv=notrunc 2>/dev/null
+else
+    echo "A" > /tmp/manual_slot_selected
+    dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
+    dd if=/dev/zero of=/dev/block/platform/bootdevice/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
+    printf "_a\0\0BCAB\x01\x02\0\0\xef\0\x2e\0" | dd of=/dev/block/by-name/misc bs=1 seek=2048 count=16 conv=notrunc 2>/dev/null
+fi
+sync
+exit 0
+```
+
+### Pre-Reboot Enforcer Hooks (`system/bin/rebootsystem.sh` & `rebootrecovery.sh`)
+
+When the user executes a reboot in TWRP, the pre-reboot hooks inspect `/tmp/manual_slot_selected`. Unless the user explicitly intervened and tapped `Slot B`, the device unconditionally boots Slot A (AOSP):
+
+```bash
+#!/system/bin/sh
+MANUAL=$(cat /tmp/manual_slot_selected 2>/dev/null)
+if [ "$MANUAL" = "B" ]; then
+    # User explicitly selected Slot B
+    printf "_b\0\0BCAB\x01\x02\0\0\xee\0\xef\0" | dd of=/dev/block/by-name/misc bs=1 seek=2048 count=16 conv=notrunc 2>/dev/null
+else
+    # Default: Unconditionally enforce Slot A (AOSP)
+    printf "_a\0\0BCAB\x01\x02\0\0\xef\0\x2e\0" | dd of=/dev/block/by-name/misc bs=1 seek=2048 count=16 conv=notrunc 2>/dev/null
 fi
 
-# 3. Force kernel hardware restart (bypassing TWRP C++ hooks)
+dd if=/dev/zero of=/dev/block/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
+dd if=/dev/zero of=/dev/block/platform/bootdevice/by-name/misc bs=2048 count=1 conv=notrunc 2>/dev/null
+
 sync
 echo 1 > /proc/sys/kernel/sysrq 2>/dev/null
 echo b > /proc/sysrq-trigger 2>/dev/null
 reboot -f 2>/dev/null
-busybox reboot -f 2>/dev/null
 exit 0
 ```
 
