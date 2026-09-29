@@ -334,9 +334,9 @@ src/cusrec/
 
 ### Repacking TWRP with a Custom Kernel
 ```bash
-python3 src/cusrec/repack.py out/AlphaDroid_3.4_ResukiSU.img \
+python3 src/cusrec/repack.py build/output/AlphaDroid_3.4_ResukiSU.img \
     --recovery twrp \
-    -k out/ImageResukiSU.gz \
+    -k build/output/ImageResukiSU.gz \
     -o /mnt/c/Users/psycosis/Downloads/TwrpBOOT_ResukiSU.img
 ```
 
