@@ -80,11 +80,7 @@ def _auto_detect_kernel_gz(directory: Path) -> Path:
     chosen = candidates[0]
     print(f"[+] Auto-detected kernel gz: {chosen.name}")
     return chosen
-
-
 def _list_base_imgs(directory: Path):
-    """AOSP-only: pristine base images live in images/aosp/ (fallback: next
-    to the script). Skips our own outputs so a rerun never feeds itself."""
     skip_suffixes = ('-resukisu.img', '-stock.img')
     search_dirs = []
     aosp_dir = directory / "images" / "aosp"
@@ -102,8 +98,19 @@ def _list_base_imgs(directory: Path):
             candidates.append(p)
     candidates.sort(key=lambda p: p.name.lower())
     return candidates
-
-
+def _find_fronxkernel_zip(directory: Path) -> Path:
+    zips = [p for p in directory.glob("FronxKernel-*.zip") if p.is_file()]
+    if not zips:
+        raise FileNotFoundError(
+            f"No FronxKernel-*.zip in {directory} — copy one from EverpalTweaks out/ "
+            "(FronxKernel-1.0-ResukiSU.zip or FronxKernel-1.0.zip)")
+    def version_key(p: Path):
+        return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', p.name)]
+    fronx = [p for p in zips if _is_anykernel_zip(p)] or zips
+    resukisu = [p for p in fronx if 'resukisu' in p.name.lower()]
+    chosen = (resukisu or sorted(fronx, key=version_key, reverse=True))[0]
+    print(f"[+] Using FronxKernel zip: {chosen.name}")
+    return chosen
 def _latest_resukisu_gz(directory: Path) -> Path:
     """Newest vN-resukisu.gz by version sort; falls back to newest kernel .gz."""
     gz_cands = _list_kernel_gz(directory)
@@ -113,10 +120,7 @@ def _latest_resukisu_gz(directory: Path) -> Path:
     chosen = (resukisu or gz_cands)[0]
     print(f"[+] Selected kernel: {chosen.name}")
     return chosen
-
-
 def _root_output_for(base_img: Path, script_dir: Path) -> Path:
-    """images/root/<BaseStem>-ResukiSU.img (strips .img, avoids double suffix)."""
     stem = base_img.name
     if stem.lower().endswith('.img'):
         stem = stem[:-4]
@@ -145,16 +149,10 @@ def _resolve_kernel_gz_to_workdir(kernel_gz: Path, work_dir: Path) -> Path:
     shutil.copyfile(kernel_gz, dest)
     return dest
 def _auto_detect_bootimg(directory: Path) -> Path:
-
-
-    candidates = [p for p in directory.glob("*.img") if p.is_file()
-                  and not p.name.startswith("boot_")
-                  and not p.name.lower().endswith(('-resukisu.img', '-stock.img'))]
+    candidates = [p for p in directory.glob("*.img") if p.is_file() and not p.name.startswith("boot_") and not p.name.lower().endswith(('-resukisu.img', '-stock.img'))]
     aosp_dir = directory / "images" / "aosp"
     if aosp_dir.is_dir():
-        candidates += [p for p in aosp_dir.glob("*.img") if p.is_file()
-                       and not p.name.startswith("boot_")
-                       and not p.name.lower().endswith(('-resukisu.img', '-stock.img'))]
+        candidates += [p for p in aosp_dir.glob("*.img") if p.is_file() and not p.name.startswith("boot_") and not p.name.lower().endswith(('-resukisu.img', '-stock.img'))]
     if not candidates:
         candidates = [p for p in directory.glob("*.img") if p.is_file()]
     if not candidates:
@@ -173,14 +171,7 @@ def _parse_unpack_output(text: str):
         params[key.strip()] = val.strip()
     return params
 def _parse_avb_info(text: str):
-    avb_info = {
-        'has_avb': False,
-        'partition_size': None,
-        'partition_name': 'boot',
-        'algorithm': 'SHA256_RSA2048',
-        'salt': None,
-        'props': []
-    }
+    avb_info = {'has_avb': False,'partition_size': None,'partition_name': 'boot','algorithm': 'SHA256_RSA2048','salt': None,'props': []}
     if 'Footer version:' in text or 'VBMeta offset:' in text:
         avb_info['has_avb'] = True
     for line in text.splitlines():
@@ -202,21 +193,20 @@ def _parse_avb_info(text: str):
                 avb_info['props'].append(f"{k.strip()}:{v.strip().strip('\'\"')}")
     return avb_info
 def main(kernelzip: str = "", bootimg: str = "", output: str = ""):
-    """No args -> for each base in images/aosp/, build
-    images/root/<Base>-ResukiSU.img with the latest vN-resukisu.gz.
-    Any explicit arg -> single one-off build."""
     script_dir = Path(__file__).resolve().parent
     if not kernelzip and not bootimg and not output:
         bases = _list_base_imgs(script_dir)
         if not bases:
             raise FileNotFoundError(f"No base .img files found in {script_dir / 'images' / 'aosp'}")
-        kernel = _latest_resukisu_gz(script_dir)
+        try:
+            kernel = _find_fronxkernel_zip(script_dir)
+        except FileNotFoundError:
+            kernel = _latest_resukisu_gz(script_dir)
         print(f"[*] Building {len(bases)} image(s) with {kernel.name} - one per base in images/aosp/")
         results = []
         for b in bases:
             print(f"--- {b.name} ---")
-            results.append(_build_single(kernelzip=str(kernel), bootimg=str(b),
-                                         output=str(_root_output_for(b, script_dir))))
+            results.append(_build_single(kernelzip=str(kernel), bootimg=str(b), output=str(_root_output_for(b, script_dir))))
         print(f"[SUCCESS] Built {len(results)} image(s)")
         return results
     return _build_single(kernelzip=kernelzip, bootimg=bootimg, output=output)
@@ -228,12 +218,15 @@ def _build_single(kernelzip: str = "", bootimg: str = "", output: str = "") -> s
     unpack_script = python_dir / "unpack_bootimg.py"
     testkey_path = python_dir / "testkey_rsa2048.pem"
     if not kernelzip:
-        gz_cands = _list_kernel_gz(script_dir)
-        if gz_cands:
-            kzip_path = gz_cands[0]
-            print(f"[+] Auto-detected kernel gz: {kzip_path.name}")
-        else:
-            kzip_path = _auto_detect_kernelzip(script_dir)
+        try:
+            kzip_path = _find_fronxkernel_zip(script_dir)
+        except FileNotFoundError:
+            gz_cands = _list_kernel_gz(script_dir)
+            if gz_cands:
+                kzip_path = gz_cands[0]
+                print(f"[+] Auto-detected kernel gz: {kzip_path.name}")
+            else:
+                kzip_path = _auto_detect_kernelzip(script_dir)
     else:
         kzip_path = Path(kernelzip).resolve()
         if not kzip_path.is_file() and (script_dir / kernelzip).is_file():
@@ -242,8 +235,6 @@ def _build_single(kernelzip: str = "", bootimg: str = "", output: str = "") -> s
             raise FileNotFoundError(f"Kernel source file not found: {kernelzip}")
         if kzip_path.suffix.lower() not in ('.zip', '.gz'):
             print(f"[!] WARNING: unexpected kernel source extension '{kzip_path.suffix}' - continuing anyway")
-
-
     if not bootimg:
         paired = None
         cand = script_dir / "AospBOOT.img"
@@ -381,7 +372,7 @@ def _build_single(kernelzip: str = "", bootimg: str = "", output: str = "") -> s
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create flashable boot.img(s) from kernel source(s) (.gz Image.gz preferred, AnyKernel3 .zip fallback) and base boot.img. No kernel source given = build one image per .gz/.zip found.")
+    parser = argparse.ArgumentParser(description="Create flashable boot.img(s) from a staged FronxKernel zip (copy from EverpalTweaks out/), falling back to loose .gz/.zip kernel sources, plus base boot.img.")
     parser.add_argument("kernelzip_pos", nargs="?", default="", help="Path to kernel .gz or AnyKernel3 zip (optional)")
     parser.add_argument("bootimg_pos", nargs="?", default="", help="Path to base boot.img (optional)")
     parser.add_argument("-k", "--kernelzip", default="", help="Path to kernel .gz or AnyKernel3 zip")
