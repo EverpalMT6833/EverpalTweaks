@@ -203,7 +203,7 @@ EverpalTweaks/
         │   ├── mediatek/               # FrontlXOX MTK hardware HAL (lineage-23.0)
         │   └── xiaomi/                 # FrontlXOX Xiaomi hardware HAL (lineage-23.0)
         ├── kernel/
-        │   └── xiaomi/mt6833/          # himanshuksr0007 Linux 4.14 kernel (lineage-24.0)
+        │   └── xiaomi/mt6833/          # Fronx Linux 4.14 kernel (vanilla: lineage-24; overlay: FronxKernel)
         ├── kernel-5.10/                # MediaTek 5.10 GKI donor kernel (vic, mt6789/mt6833 sibling)
         └── vendor/
             ├── mediatek/ims/           # FrontlXOX MTK IMS vendor blobs (android-16-qpr2)

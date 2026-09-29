@@ -208,7 +208,7 @@ EverpalTweaks/
     │   │   ├── mediatek/               # FrontlXOX MTK hardware HAL (lineage-23.0)
     │   │   └── xiaomi/                 # FrontlXOX Xiaomi hardware HAL (lineage-23.0)
     │   ├── kernel/
-    │   │   └── xiaomi/mt6833/          # Fronx Linux 4.14 kernel (baseline: tag AquaV3.4; Fronx dev: lineage-24.0)
+    │   │   └── xiaomi/mt6833/          # Fronx Linux 4.14 kernel (vanilla: lineage-24 = Aqua V3.4; overlay: FronxKernel thin branch)
     │   ├── kernel-5.10/                # 5.10 port tree (branch muse_evergo) — see §9 Linux 5.10 Bringup
     │   └── vendor/
     │       ├── mediatek/ims/           # FrontlXOX MTK IMS vendor blobs (android-16-qpr2)
@@ -290,7 +290,7 @@ Short flags `--memory/-m`, `--thermal/-t`, `--vulkan/-v`, `--spatial/-s` are als
 
 ### Building the Fronx Kernel (ZorinOS / Ubuntu)
 
-Kernel builds live in the kernel tree (`src/trees/kernel/xiaomi/mt6833/build.sh` — reset-first: always builds from pristine Aqua (tag `AquaV3.4`), see the kernel tree's `AGENTS.md` §5/§11 on the `lineage-24.0` branch for the full phase-wise flow).
+Kernel builds live in the kernel tree (`src/trees/kernel/xiaomi/mt6833/build.sh` — reset-first: always builds from pristine Aqua (tag `AquaV3.4`), see the kernel tree's `AGENTS.md` §5/§11 on the `FronxKernel` branch for the full phase-wise flow).
 
 **Prerequisites** (one-time setup on ZorinOS):
 
