@@ -15,7 +15,7 @@ for parent in HERE.parents:
     if (parent / "src" / "scripts").is_dir():
         REPO = parent
         break
-FWSET = REPO / "out" / "Firmwares" / "evergo_in_images_OS1.0.1.0.TGBINXM_13.0"
+FWSET = REPO / "build" / "output" / "Firmwares" / "evergo_in_images_OS1.0.1.0.TGBINXM_13.0"
 def pick(*paths):
     for p in paths:
         if p and Path(p).is_file():

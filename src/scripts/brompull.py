@@ -8,11 +8,11 @@ plug USB), then runs this ONE command from the repo root:
 
     python src/scripts/brompull.py --label test57
 
-Output lands in out/Brom/ (auto-created): expdb-<label>.bin (40MB) and
+Output lands in build/output/Brom/ (auto-created): expdb-<label>.bin (40MB) and
 ramoops-<label>.bin (320KB, best-effort: DRAM may not survive BROM entry).
 
 Requires the mtkclient tree at src/modules/Mediatek/mtk-client and the
-evergo firmware set at out/Firmwares/evergo_in_images_OS1.0.1.0.TGBINXM_13.0
+evergo firmware set at build/output/Firmwares/evergo_in_images_OS1.0.1.0.TGBINXM_13.0
 (preloader + DA). If this SoC needs extra connection flags you already use
 (auth/crash/etc.), append them after `--` and they are passed through.
 Standalone host use (HOST/Downloads/Brom): same script next to Mediatek/
@@ -30,11 +30,11 @@ def pick(*ps):
     return Path(ps[0])
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-FWSET = REPO / "out" / "Firmwares" / "evergo_in_images_OS1.0.1.0.TGBINXM_13.0"
+FWSET = REPO / "build" / "output" / "Firmwares" / "evergo_in_images_OS1.0.1.0.TGBINXM_13.0"
 MTKCLIENT = pick(REPO / "src" / "modules" / "Mediatek" / "mtk-client" / "mtk", HERE / "Mediatek" / "mtk-client" / "mtk")
 PRELOADER = pick(FWSET / "images" / "preloader_evergo.bin", HERE / "firmware" / "preloader_evergo.bin")
 DA = pick(FWSET / "MTK_AllInOne_DA.bin", HERE / "firmware" / "MTK_AllInOne_DA.bin")
-OUTDIR = (REPO if (REPO / "src" / "scripts").is_dir() else HERE) / "out" / "Brom"
+OUTDIR = (REPO if (REPO / "src" / "scripts").is_dir() else HERE) / "build" / "output" / "Brom"
 EXPDB_SIZE = 0x2800000
 RAMOOPS_SIZE = 0x50000
 RAMOOPS_LEN = "0x50000"

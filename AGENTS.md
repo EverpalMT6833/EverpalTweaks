@@ -319,7 +319,7 @@ ZyC Clang 22 is auto-downloaded to `~/toolchains/ZyC-clang-22.0.0` on first run.
 ./src/trees/kernel/xiaomi/mt6833/build.sh --clean
 ```
 
-_Output: `out/FronxKernel-*.zip` (+ AVB-signed `boot.img` when the PI-X base is present) — flash via KernelSU Manager or recovery._
+_Output: `build/output/FronxKernel-*.zip` (+ AVB-signed `boot.img` when the PI-X base is present) — flash via KernelSU Manager or recovery._
 
 **Injecting a pre-built kernel into the Vulkan module** (without running a full build):
 
@@ -453,7 +453,7 @@ All agents working within this codebase must strictly observe these rules:
 11. 🌲 **Submodule GitHub Tracking:** All submodules in `src/trees/` track their designated GitHub repos as remote `origin`. Upstream synchronization (`src/scripts/synctrees.py`) pushes directly to `origin` on GitHub.
 12. 🤖 **Sub-Agent First Policy:** Before the parent agent makes any direct code edits, file writes, or tree modifications for non-trivial tasks, it MUST first delegate discovery, auditing, and research to specialized sub-agents. The parent agent acts as orchestrator — it reads sub-agent findings, synthesizes them, then and only then executes targeted changes. Direct parent-agent edits without prior sub-agent research are only acceptable for single-line fixes, typo corrections, or trivially scoped changes confirmed at a glance.
 13. 🛑 **Flashable Script Encoding Hygiene:** All shell scripts shipped inside flashable zips (`anykernel.sh`, `META-INF/com/google/android/update-binary`, `updater-script`) MUST be pure LF, ASCII, and free of BOM/garbage-byte prefixes. CRLF line endings break the recovery shebang (`#!/sbin/sh^M` → "bad interpreter" → instant sideload abort), and stray non-ASCII bytes (e.g. U+3002 `。` from a bad editor save) become fatal commands under `set -e`. Verify with `file` (must NOT say "with CRLF"), `grep -c $'\r'` (must be 0), and `sh -n` before zipping.
-14. 🛑 **Scratch & Output Placement:** All build-related scratch/temp work goes in `./build/` and all outputs in `./out/`. Never use `/tmp/opencode` (or other system temp dirs) for repo work — contents vanish on reboot and are invisible to the user.
+14. 🛑 **Scratch & Output Placement:** All build-related scratch/temp work goes in `./build/` and all outputs in `./build/output/` (single folder — no separate `out/`). Never use `/tmp/opencode` (or other system temp dirs) for repo work — contents vanish on reboot and are invisible to the user.
 
 ---
 
@@ -496,7 +496,7 @@ Complete and validate each phase before progressing to the next.
 
 ## 9. Linux 5.10 Bringup (everpal — active workstream)
 
-5.10 port tree: `src/trees/kernel-5.10`, branch **`muse_evergo`** (gold donor base). Current base ROM is **AlphaDroid** (`out/AlphaDroid_AospBOOT.img`: hv2, page 2048, base `0x40000000`, k_offset `0x80000`, ramdisk `0x11100000`, tags/dtb `0x7c80000`, os 16.0.0/2026-05, AVB SHA256_RSA2048 rollback 1, salt `0c4a3d71…`, ramdisk 18,443,389 B, stock DTB 170,672 B). Prior Axion base is retired. Debug cmdline carried on every test image: stock bootopt + `androidboot.selinux=permissive hung_task_timeout_secs=8 watchdog_thresh=5 printk.devkmsg=on initcall_debug console=ttyS0,921600n1`.
+5.10 port tree: `src/trees/kernel-5.10`, branch **`muse_evergo`** (gold donor base). Current base ROM is **AlphaDroid** (`build/output/AlphaDroid_AospBOOT.img`: hv2, page 2048, base `0x40000000`, k_offset `0x80000`, ramdisk `0x11100000`, tags/dtb `0x7c80000`, os 16.0.0/2026-05, AVB SHA256_RSA2048 rollback 1, salt `0c4a3d71…`, ramdisk 18,443,389 B, stock DTB 170,672 B). Prior Axion base is retired. Debug cmdline carried on every test image: stock bootopt + `androidboot.selinux=permissive hung_task_timeout_secs=8 watchdog_thresh=5 printk.devkmsg=on initcall_debug console=ttyS0,921600n1`.
 
 ### Test cycle (flash-based only; `fastboot boot` unsupported)
 
@@ -504,11 +504,11 @@ Complete and validate each phase before progressing to the next.
 fastboot erase misc; fastboot flash boot_a boot.img; fastboot flash boot_b boot.img; fastboot --set-active=b; fastboot reboot;
 ```
 
-3 hands-off loops (`fastboot reboot` between attempts, no keys) → straight to BROM (keys, no kernel/LK boot) → pulls below → restore → boot system. `--set-active=b` is load-bearing: ROM lives on slot B; slot A has no system (boots landing on A die on empty `system_a`). `erase misc` every round (Rescue Party poisons BCB → recovery-mode boots). Archive every test image in `out/Archive/` (user moves images off-machine; `out/` is gitignored). Every version gets a TL;DR for the user.
+3 hands-off loops (`fastboot reboot` between attempts, no keys) → straight to BROM (keys, no kernel/LK boot) → pulls below → restore → boot system. `--set-active=b` is load-bearing: ROM lives on slot B; slot A has no system (boots landing on A die on empty `system_a`). `erase misc` every round (Rescue Party poisons BCB → recovery-mode boots). Archive every test image in `build/output/Archive/` (user moves images off-machine; `build/output/` is gitignored). Every version gets a TL;DR for the user.
 
 ### Evidence pipeline (BROM; root/adb no longer used for pulls)
 
-Host kit: `C:\Users\psycosis\Downloads\EvergoBROM\` (`commands.txt` = source of truth, `firmware/` = evergo preloader + DA + auth, `mtk-client/`, `output/`). Fixed host names (`expdb.bin` 40MB, `ramoops.bin` 896K, overwrite per round); WSL files them as `out/bromPull/testXX/{expdb,ramoops}-testXX.bin`. Order matters — DRAM first:
+Host kit: `C:\Users\psycosis\Downloads\EvergoBROM\` (`commands.txt` = source of truth, `firmware/` = evergo preloader + DA + auth, `mtk-client/`, `output/`). Fixed host names (`expdb.bin` 40MB, `ramoops.bin` 896K, overwrite per round); WSL files them as `build/output/bromPull/testXX/{expdb,ramoops}-testXX.bin`. Order matters — DRAM first:
 
 ```bash
 python mtk-client/mtk da peek 0x48090000 0xe0000 --preloader firmware/preloader_evergo.bin --filename output/ramoops.bin
@@ -536,4 +536,4 @@ python mtk-client/mtk r expdb output/expdb.bin --preloader firmware/preloader_ev
 
 - Proven: `clang-r416183b` (`build/toolchains/`) on PATH, `CC="ccache clang" LLVM=1 LLVM_IAS=1`, NO `LD=` override (it breaks kconfig linker probe), NO repo-script `KCFLAGS` (clang-22-only warning flag). ZyC-22 turns new warnings (`default-const-init-field-unsafe`, `bitwise-instead-of-logical`, `strict-prototypes`) into errors — do not mix toolchains mid-tree.
 - After defconfig edits: `make O=out everpal_510_defconfig && make O=out olddefconfig`, then `-j` build. `syncconfig` passes standalone; `-j` races on the kconfig tool are environmental noise.
-- Scratch/build temp → `./build/`; outputs → `./out/`. Never `/tmp/opencode`.
+- Scratch/build temp → `./build/`; outputs → `./build/output/`. Never `/tmp/opencode`.

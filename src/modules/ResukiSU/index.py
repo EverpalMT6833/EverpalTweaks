@@ -102,7 +102,7 @@ def _find_fronxkernel_zip(directory: Path) -> Path:
     zips = [p for p in directory.glob("FronxKernel-*.zip") if p.is_file()]
     if not zips:
         raise FileNotFoundError(
-            f"No FronxKernel-*.zip in {directory} — copy one from EverpalTweaks out/ "
+            f"No FronxKernel-*.zip in {directory} — copy one from EverpalTweaks build/output/ "
             "(FronxKernel-1.0-ResukiSU.zip or FronxKernel-1.0.zip)")
     def version_key(p: Path):
         return [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', p.name)]
@@ -372,7 +372,7 @@ def _build_single(kernelzip: str = "", bootimg: str = "", output: str = "") -> s
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create flashable boot.img(s) from a staged FronxKernel zip (copy from EverpalTweaks out/), falling back to loose .gz/.zip kernel sources, plus base boot.img.")
+    parser = argparse.ArgumentParser(description="Create flashable boot.img(s) from a staged FronxKernel zip (copy from EverpalTweaks build/output/), falling back to loose .gz/.zip kernel sources, plus base boot.img.")
     parser.add_argument("kernelzip_pos", nargs="?", default="", help="Path to kernel .gz or AnyKernel3 zip (optional)")
     parser.add_argument("bootimg_pos", nargs="?", default="", help="Path to base boot.img (optional)")
     parser.add_argument("-k", "--kernelzip", default="", help="Path to kernel .gz or AnyKernel3 zip")
