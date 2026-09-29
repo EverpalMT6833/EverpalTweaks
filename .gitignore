@@ -23,3 +23,6 @@ __pycache__/
 # Device flash artifacts: 128MB boot images + zips, over GitHub limits and
 # unpushable via LFS on forks — distributed via releases, never versioned.
 src/modules/ResukiSU/images/
+
+# Staged FronxKernel zips: build artifacts copied from out/, never versioned.
+src/modules/ResukiSU/FronxKernel-*.zip
