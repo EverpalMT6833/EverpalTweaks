@@ -188,7 +188,6 @@ EverpalTweaks/
     ├── scripts/                       # 🛠️ Centralized Repository Automation Tooling (Root-Only)
     │   ├── autobench.py               # Automated Geekbench 7 (CPU + GPU Vulkan) suite with real-time CLI telemetry
     │   ├── benchpull.py               # Automated ADB extractor for Geekbench 7 & 3DMark Sling Shot Extreme DBs
-    │   ├── build_kernel.sh            # Aqua kernel builder + Vulkan overlay combo zip
     │   ├── builder.py                 # Unified master module packager & CRC-32 validator (--all, -m, -t, -v, -s)
     │   ├── decouple_libge2.py         # Vulkan 1.3 companion library patcher
     │   ├── decrypt_thermal.py         # Xiaomi OpenSSL AES-128-CBC encryption/decryption CLI

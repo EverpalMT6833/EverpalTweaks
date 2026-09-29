@@ -191,7 +191,6 @@ EverpalTweaks/
     ├── scripts/                       # 🛠️ Centralized Repository Automation Tooling
     │   ├── autobench.py               # Automated Geekbench 7 (CPU + GPU Vulkan) suite with real-time CLI telemetry
     │   ├── benchpull.py               # Automated ADB extractor for Geekbench 7 & 3DMark Sling Shot Extreme DBs
-    │   ├── build_kernel.sh            # ZorinOS integrated builder: Aqua kernel + optional Vulkan 1.3 overlay combo zip
     │   ├── builder.py                 # Unified master module packager & CRC-32 validator (--all, --memory/-m, --thermal/-t, --vulkan/-v, --spatial/-s, --kernel/-k, --dtbo/-d, --blobs/-b)
     │   ├── decouple_libge2.py         # Vulkan 1.3 one-shot binary patch: DT_NEEDED libged.so -> libge2.so
     │   ├── decrypt_thermal.py         # Xiaomi OpenSSL AES-128-CBC encryption/decryption CLI
@@ -209,7 +208,7 @@ EverpalTweaks/
     │   │   ├── mediatek/               # FrontlXOX MTK hardware HAL (lineage-23.0)
     │   │   └── xiaomi/                 # FrontlXOX Xiaomi hardware HAL (lineage-23.0)
     │   ├── kernel/
-    │   │   └── xiaomi/mt6833/          # himanshuksr0007 Linux 4.14 kernel (lineage-24.0)
+    │   │   └── xiaomi/mt6833/          # Fronx Linux 4.14 kernel (baseline: tag AquaV3.4; Fronx dev: lineage-24.0)
     │   ├── kernel-5.10/                # 5.10 port tree (branch muse_evergo) — see §9 Linux 5.10 Bringup
     │   └── vendor/
     │       ├── mediatek/ims/           # FrontlXOX MTK IMS vendor blobs (android-16-qpr2)
@@ -289,7 +288,9 @@ _Note: Flashable zips are always written exclusively to `src/package/<Module>/pa
 
 Short flags `--memory/-m`, `--thermal/-t`, `--vulkan/-v`, `--spatial/-s` are also accepted. Vulkan-only kernel injection (without a full kernel build): `python src/scripts/builder.py --vulkan --kernel path/to/Image.gz --dtbo path/to/dtbo.img` plus optional `--blobs <dir>`.
 
-### Building the Aqua Kernel (ZorinOS / Ubuntu)
+### Building the Fronx Kernel (ZorinOS / Ubuntu)
+
+Kernel builds live in the kernel tree (`src/trees/kernel/xiaomi/mt6833/build.sh` — reset-first: always builds from pristine Aqua (tag `AquaV3.4`), see the kernel tree's `AGENTS.md` §5/§11 on the `lineage-24.0` branch for the full phase-wise flow).
 
 **Prerequisites** (one-time setup on ZorinOS):
 
@@ -300,31 +301,25 @@ sudo apt install -y build-essential bc bison flex libssl-dev libelf-dev \
 
 ZyC Clang 22 is auto-downloaded to `~/toolchains/ZyC-clang-22.0.0` on first run.
 
-**Kernel-only zip** (AquaKernel-\<date\>.zip via Addster09's AnyKernel3):
+**Kernel-only zip** (FronxKernel-\<ver\>_\<IST\>.zip via Addster09's AnyKernel3):
 
 ```bash
-bash src/scripts/build_kernel.sh
+./src/trees/kernel/xiaomi/mt6833/build.sh
 ```
 
-**Kernel + Vulkan 1.3 overlay combo zip** (single `Vulkan13-KernelSU.zip`):
+**With ReSukiSU + SUSFS patches baked in:**
 
 ```bash
-bash src/scripts/build_kernel.sh --vulkan
-```
-
-**With KernelSU + SUSFS patches baked in:**
-
-```bash
-bash src/scripts/build_kernel.sh --vulkan --with-ksu
+./src/trees/kernel/xiaomi/mt6833/build.sh --with-ksu
 ```
 
 **Clean build (wipe `out/` first):**
 
 ```bash
-bash src/scripts/build_kernel.sh --vulkan --clean
+./src/trees/kernel/xiaomi/mt6833/build.sh --clean
 ```
 
-_Output: `src/package/Vulkan13/package/Vulkan13-KernelSU.zip` — flash via KernelSU Manager or recovery._
+_Output: `out/FronxKernel-*.zip` (+ AVB-signed `boot.img` when the PI-X base is present) — flash via KernelSU Manager or recovery._
 
 **Injecting a pre-built kernel into the Vulkan module** (without running a full build):
 
