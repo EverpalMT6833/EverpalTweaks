@@ -43,3 +43,8 @@
 	url = https://github.com/FrontlXOX/kernel_xiaomi_gold.git
 	branch = gold-s-oss
 	ignore = dirty
+[submodule "src/modules/Mediatek/lk-unlocker"]
+	path = src/modules/Mediatek/lk-unlocker
+	url = https://github.com/georgiynesterov/lk-unlock.git
+	branch = main
+	ignore = dirty
