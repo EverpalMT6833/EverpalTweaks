@@ -1,7 +1,7 @@
 [submodule "src/trees/device/mediatek/sepolicy_vndr"]
 	path = src/trees/device/mediatek/sepolicy_vndr
 	url = https://github.com/FrontlXOX/android_device_mediatek_sepolicy_vndr.git
-	branch = lineage-23.0
+	branch = lineage-23.2
 	ignore = dirty
 [submodule "src/trees/device/xiaomi/everpal"]
 	path = src/trees/device/xiaomi/everpal
@@ -41,7 +41,7 @@
 [submodule "src/trees/kernel-5.10"]
 	path = src/trees/kernel-5.10
 	url = https://github.com/FrontlXOX/kernel_xiaomi_gold.git
-	branch = gold-s-oss
+	branch = muse_evergo
 	ignore = dirty
 [submodule "src/modules/Mediatek/lk-unlocker"]
 	path = src/modules/Mediatek/lk-unlocker
