@@ -24,9 +24,9 @@ __pycache__/
 # unpushable via LFS on forks — distributed via releases, never versioned.
 src/modules/ResukiSU/images/
 
-# mtk-client runtime artifacts: device-specific IDs (MEID/SOCID) + duplicate
-# preloader copy (canonical blob lives in src/modules/Mediatek/dldr-files/).
-# Never versioned — regenerated on every BROM run.
-src/modules/Mediatek/mtk-client/.state
-src/modules/Mediatek/mtk-client/logs/
+# Runtime artifacts (codebase-wide): device-specific BROM state (MEID/SOCID),
+# per-run logs, and duplicate preloader copies (canonical blob lives in
+# src/modules/Mediatek/dldr-files/). Never versioned — regenerated every run.
+**/.state
+**/logs/
 src/modules/Mediatek/mtk-client/preloader_evergo.bin
