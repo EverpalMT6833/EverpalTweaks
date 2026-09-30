@@ -209,7 +209,7 @@ EverpalTweaks/
     │   │   └── xiaomi/                 # FrontlXOX Xiaomi hardware HAL (lineage-23.0)
     │   ├── kernel/
     │   │   └── xiaomi/mt6833/          # Fronx Linux 4.14 kernel (vanilla: lineage-24 = Aqua V3.4; overlay: FronxKernel thin branch)
-    │   ├── kernel-5.10/                # 5.10 port tree (branch muse_evergo) — see §9 Linux 5.10 Bringup
+    │   ├── kernel-5.10/                # 5.10 donor tree (donor_5.10_kernel_xiaomi_gold — fresh fork of linastorvaldz/kernel_xiaomi_gold) — see §9 Linux 5.10 Bringup
     │   └── vendor/
     │       ├── mediatek/ims/           # FrontlXOX MTK IMS vendor blobs (android-16-qpr2)
     │       ├── xiaomi/camera/          # himanshuksr0007 MIUI camera vendor blobs (lineage-23.2)
@@ -494,46 +494,28 @@ Complete and validate each phase before progressing to the next.
 
 ---
 
-## 9. Linux 5.10 Bringup (everpal — active workstream)
+## 9. Linux 5.10 Bringup (everpal — fresh donor architecture)
 
-5.10 port tree: `src/trees/kernel-5.10`, branch **`muse_evergo`** (gold donor base). Current base ROM is **AlphaDroid** (`build/output/AlphaDroid_AospBOOT.img`: hv2, page 2048, base `0x40000000`, k_offset `0x80000`, ramdisk `0x11100000`, tags/dtb `0x7c80000`, os 16.0.0/2026-05, AVB SHA256_RSA2048 rollback 1, salt `0c4a3d71…`, ramdisk 18,443,389 B, stock DTB 170,672 B). Prior Axion base is retired. Debug cmdline carried on every test image: stock bootopt + `androidboot.selinux=permissive hung_task_timeout_secs=8 watchdog_thresh=5 printk.devkmsg=on initcall_debug console=ttyS0,921600n1`.
+### Donor Baseline
+- **Donor Tree:** `donor_5.10_kernel_xiaomi_gold` — a fresh, clean fork of [`linastorvaldz/kernel_xiaomi_gold`](https://github.com/linastorvaldz/kernel_xiaomi_gold).
+- **Target Architecture:** MediaTek Dimensity 810 5G (MT6833P / MT6833 family).
+- **Donor SoC / Device:** MediaTek MT6833 on Redmi Note 13 5G (`gold`) running stock upstream Linux **5.10.168**.
+- **Target Device:** Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (`everpal`).
+- **Reset Strategy:** All legacy experimental 5.10 test patches, ad-hoc workarounds, and branch history have been retired. The 5.10 bringup restarts clean directly from the pristine `gold` 5.10 donor tree, layering only verified hardware DTB bindings, panel/touch drivers, and defconfig requirements.
 
-### Test cycle (flash-based only; `fastboot boot` unsupported)
+### Target Submodule Path
+- **Submodule Location:** `src/trees/kernel-5.10`
+- **Upstream Donor Repo:** `donor_5.10_kernel_xiaomi_gold` (fresh fork of `linastorvaldz/kernel_xiaomi_gold`).
+- **Status:** Pending reclone from the fresh fork repository link once provided by maintainer.
 
-```bash
-fastboot erase misc; fastboot flash boot_a boot.img; fastboot flash boot_b boot.img; fastboot --set-active=b; fastboot reboot;
-```
-
-3 hands-off loops (`fastboot reboot` between attempts, no keys) → straight to BROM (keys, no kernel/LK boot) → pulls below → restore → boot system. `--set-active=b` is load-bearing: ROM lives on slot B; slot A has no system (boots landing on A die on empty `system_a`). `erase misc` every round (Rescue Party poisons BCB → recovery-mode boots). Archive every test image in `build/output/Archive/` (user moves images off-machine; `build/output/` is gitignored). Every version gets a TL;DR for the user.
-
-### Evidence pipeline (BROM; root/adb no longer used for pulls)
-
-Host kit: `C:\Users\psycosis\Downloads\EvergoBROM\` (`commands.txt` = source of truth, `firmware/` = evergo preloader + DA + auth, `mtk-client/`, `output/`). Fixed host names (`expdb.bin` 40MB, `ramoops.bin` 896K, overwrite per round); WSL files them as `build/output/bromPull/testXX/{expdb,ramoops}-testXX.bin`. Order matters — DRAM first:
-
-```bash
-python mtk-client/mtk da peek 0x48090000 0xe0000 --preloader firmware/preloader_evergo.bin --filename output/ramoops.bin
-python mtk-client/mtk r expdb output/expdb.bin --preloader firmware/preloader_evergo.bin --loader firmware/MTK_AllInOne_DA.bin
-```
-
-- `peek` (preloader mode) is BANNED — hangs on PreLoader VCOM re-enumeration. `da peek` (DA mode) is the working DRAM path.
-- `da` subcommands accept no `--loader`; `mtk-client/Loader/MTK_AllInOne_DA_5.2152.bin` holds a copy of the proven evergo DA (original kept as `.bak`). Revert: `cp mtk-client/Loader/MTK_AllInOne_DA_5.2152.bin.bak mtk-client/Loader/MTK_AllInOne_DA_5.2152.bin`.
-- `printgpt` offsets are byte offsets; `rs` units are 4096-byte sectors; `ro` byte reads of some regions return zeros (use `rs`, verify non-zero).
-- expdb holds preloader/TEE/LK logs only — kernel evidence lives in pstore DRAM (`0x48090000`, LK-passed DTB region). Anchor multi-record pulls by content (banner hash), never file order. Branches: `muse_evergo` (kernel), `main` (repo).
-
-### Bugs killed (test57→test65)
-
-1. Gold DTB → LK `panic: ASSERT boot_info.c:61 g_boot_info.img_loaded` after a metronomic 5736ms load; kernel never starts. Fix: ship **stock DTB** (test59+). Gold DTB is unproven on Axion/AlphaDroid LK.
-2. Stock DTB lacks serial console (gold had none either; stock has `ttyS0`). Fix: `console=ttyS0,921600n1` on cmdline (test58+).
-3. `dm-verity: Invalid number of feature args` → `InitFatalReboot` on `/system`. Android 16 sends 10 opt args (FEC); `DM_VERITY_FEC` was off (cap 3). Fix: `CONFIG_DM_VERITY_FEC=y` (test60, commit `4e73c04`).
-4. Broken `mt6833.dtb` build: everpal header edit removed IFRAO clock IDs 61/63 but two `.dtsi` files still referenced them. Fix: dropped the 4 dangling lines (same commit).
-5. CRNG never seeds (`crng init done` absent, ~50 uninitialized reads) → keystore2 never registers → vold waits → no zygote. TRNG is secure-only (DEVAPC blocks AP MMIO reads — `mtk-rng` on `trng` yields violations, reverted approach). Mitigations shipped: `HW_RANDOM_MTK=y` + `trng` bind (test62, commit `f81dbac`), DT `rng-seed` in `/chosen` (test63; `RANDOM_TRUST_BOOTLOADER` already y, warnings 40→7). DTB path proven via `rngtest=63` marker in `/init` environ (test64).
-6. **Blocker solved via root (test66→test69):** keystore2 never registers because beanpod (Keymaster HAL) wedges pre-IPC (zero binder calls in test67 trace; hwservicemanager healthy, answers everything; AIDL binder healthy). Live rooted stock proved beanpod holds `/dev/isee_tee0` (fd 5) + hwbinder (fd 3), wchan `binder_ioctl_write_read`. Our kernel never created it — microtrust tzdriver compiled only as `obj-m` while ramdisk has no `/lib/modules`. Fix: `400/Makefile obj-m → obj-$(CONFIG_MICROTRUST_TZ_DRIVER)` + `CONFIG_ANDROID_BINDERFS=y` (stock uses binderfs symlinks) + dynamic-core/bootprof off (test69, commit `039ffca`); dropped fpc1542 `uuid_fp` dupe (collided once isee went monolithic). Binder transaction tracing (test67, commit `2957d4a`) REVERTED after use — never ship it (dmesg flood).
-7. Detours killed: DT `rng-seed` (test63) + `rngtest=63` marker (test64) proved LK merges our bootargs to cmdline, but `ro`/`rs` forensics + persistent DEVAPC `TRNG_APB_S` violations after deleting the `trng` node (test68) prove LK substitutes its own DTB (169861 B `lk_main_dtb`, extracted from `lk_a` — near-identical to stock, same microtrust nodes). DTB edits (except bootargs) are VOID; seed/TRNG approaches dead. TRNG is secure-only (AP reads fault). `rng-seed`/fstab-bypass retired.
-8. Device runs patched evergo LK (lk-unlocker) — LK-version markers in pulls refer to it, not stock.
-9. Current kernel: `5.10.168` + evergo panel/touch commits; defconfig deltas live in `everpal_510_defconfig` (UNIX/cgroups/loop-16/blk_cgroup/bpf/FEC/HW_RANDOM_MTK/BINDERFS/TEE-builtin).
-
-### Build environment (hard-won)
-
-- Proven: `clang-r416183b` (`build/toolchains/`) on PATH, `CC="ccache clang" LLVM=1 LLVM_IAS=1`, NO `LD=` override (it breaks kconfig linker probe), NO repo-script `KCFLAGS` (clang-22-only warning flag). ZyC-22 turns new warnings (`default-const-init-field-unsafe`, `bitwise-instead-of-logical`, `strict-prototypes`) into errors — do not mix toolchains mid-tree.
-- After defconfig edits: `make O=out everpal_510_defconfig && make O=out olddefconfig`, then `-j` build. `syncconfig` passes standalone; `-j` races on the kconfig tool are environmental noise.
-- Scratch/build temp → `./build/`; outputs → `./build/output/`. Never `/tmp/opencode`.
+### Build Environment & Toolchain
+- **Toolchain:** `clang-r416183b` (`build/toolchains/`) on `PATH`.
+- **Compiler Flags:** `CC="ccache clang" LLVM=1 LLVM_IAS=1`.
+- **Linker Rule:** No `LD=` override (preserves kconfig linker probe integrity).
+- **Compilation Cycle:**
+  ```bash
+  make O=out <target_defconfig>
+  make O=out olddefconfig
+  make O=out -j$(nproc)
+  ```
+- **Output Artifacts:** Placed into `build/output/` (never `/tmp`).
