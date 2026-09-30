@@ -4,6 +4,8 @@ import subprocess
 from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent
 UNLOCK_DIR = ROOT_DIR / "lk-unlocker"
+if not UNLOCK_DIR.is_dir() and (ROOT_DIR / "lk-unlock").is_dir():
+    UNLOCK_DIR = ROOT_DIR / "lk-unlock"
 if not UNLOCK_DIR.is_dir() and (ROOT_DIR / "UnlockLK").is_dir():
     UNLOCK_DIR = ROOT_DIR / "UnlockLK"
 def pause() -> None:

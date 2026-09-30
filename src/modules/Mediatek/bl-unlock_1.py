@@ -35,7 +35,7 @@ def main() -> int:
         return 1
     print("[+] Stage 1 done. The phone has disconnected.")
     print("    Next: put the phone back into BROM mode, then run:")
-    print("      python unlockEVERGO_2_flash_lk.py")
+    print("      python bl-unlock_2.py")
     pause()
     return 0
 if __name__ == "__main__":

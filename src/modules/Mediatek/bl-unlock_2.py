@@ -7,6 +7,8 @@ MTK_DIR = ROOT_DIR / "mtk-client"
 UNLOCK_DIR = ROOT_DIR / "lk-unlocker"
 if not MTK_DIR.is_dir() and (ROOT_DIR / "mtkclient").is_dir():
     MTK_DIR = ROOT_DIR / "mtkclient"
+if not UNLOCK_DIR.is_dir() and (ROOT_DIR / "lk-unlock").is_dir():
+    UNLOCK_DIR = ROOT_DIR / "lk-unlock"
 if not UNLOCK_DIR.is_dir() and (ROOT_DIR / "UnlockLK").is_dir():
     UNLOCK_DIR = ROOT_DIR / "UnlockLK"
 def resolve_mtk_entry() -> Path:
@@ -48,7 +50,7 @@ def main(argv: list) -> int:
     if rc != 0:
         print("[!] auto-reset failed, reboot to fastboot manually: Power + Vol Down")
     print("[+] Stage 2 done. Disconnect, boot to fastboot (Power + Vol Down), then run:")
-    print("    python unlockEVERGO_3_unlock.py")
+    print("    python bl-unlock_3.py")
     pause()
     return 0
 if __name__ == "__main__":
