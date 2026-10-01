@@ -1,7 +1,7 @@
 [submodule "src/trees/device/mediatek/sepolicy_vndr"]
 	path = src/trees/device/mediatek/sepolicy_vndr
 	url = https://github.com/FrontlXOX/android_device_mediatek_sepolicy_vndr.git
-	branch = lineage-23.2
+	branch = lineage-24.0
 	shallow = true
 	ignore = dirty
 [submodule "src/trees/device/xiaomi/everpal"]
@@ -56,5 +56,11 @@
 	path = src/modules/Mediatek/lk-unlocker
 	url = https://github.com/georgiynesterov/lk-unlock.git
 	branch = main
+	shallow = true
+	ignore = dirty
+[submodule "src/trees/device/xiaomi/evergo"]
+	path = src/trees/device/xiaomi/evergo
+	url = https://github.com/FrontlXOX/ofox_device_xiaomi_evergo.git
+	branch = 12.1_A16
 	shallow = true
 	ignore = dirty
