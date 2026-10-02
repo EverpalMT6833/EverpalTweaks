@@ -675,11 +675,26 @@ def build_camera_module(root_dir: str) -> str:
     pkg_zip = os.path.join(out_dir, "LeicaCamera.zip")
 
     top_dir = os.path.dirname(root_dir)
+    tree_apk = os.path.join(
+        root_dir,
+        "src",
+        "trees",
+        "vendor",
+        "xiaomi",
+        "camera",
+        "proprietary",
+        "system",
+        "priv-app",
+        "MiuiCamera",
+        "MiuiCamera.apk",
+    )
     apk_candidates = [
+        tree_apk,
         os.path.join(top_dir, "MiCam-signed.apk"),
         os.path.join(root_dir, "MiCam-signed.apk"),
         os.path.join(top_dir, "MiCam.apk"),
         os.path.join(root_dir, "MiCam.apk"),
+        "/tmp/MiuiCamera_night_signed.apk",
     ]
     apk_path = None
     for c in apk_candidates:
@@ -718,6 +733,7 @@ persist.vendor.camera.privapp.list=com.android.camera
 ro.lmk.pressure_after_kill_min_score=201
 ro.lmk.lowmem_min_oom_score=201
 ro.lmk.camera_boost=true
+vendor.debug.ae.stat.type=2
 """
         with open(
             os.path.join(tmp_dir, "system.prop"), "w", encoding="utf-8", newline="\n"
@@ -737,6 +753,7 @@ resetprop -n ro.product.mod_device evergo_in_global
 resetprop -n persist.vendor.camera.privapp.list com.android.camera
 resetprop -n ro.lmk.pressure_after_kill_min_score 201
 resetprop -n ro.lmk.lowmem_min_oom_score 201
+resetprop -n vendor.debug.ae.stat.type 2
 
 # Enforce memory headroom for camera snapshot burst buffers
 echo "256 256" > /proc/sys/vm/lowmem_reserve_ratio 2>/dev/null
