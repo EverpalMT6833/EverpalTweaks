@@ -84,6 +84,8 @@ ro.lmk.downgrade_pressure=80
 ro.lmk.swap_util_max=90
 ro.lmk.swap_free_low_percentage=2
 ro.lmk.kill_heaviest_task=false
+ro.lmk.pressure_after_kill_min_score=201
+ro.lmk.lowmem_min_oom_score=201
 
 # ── PSI tuning ─────────────────────────────────────────────────────────────
 ro.lmk.psi_partial_stall_ms=250
@@ -151,6 +153,7 @@ setprop persist.device_config.activity_manager.max_phantom_processes $((BG_LIMIT
 write /proc/sys/vm/swappiness 80
 write /proc/sys/vm/vfs_cache_pressure 80
 write /proc/sys/vm/watermark_scale_factor 20
+write /proc/sys/vm/lowmem_reserve_ratio "256 256"
 write /proc/sys/vm/min_free_kbytes "$MIN_FREE_KB"
 write /proc/sys/vm/extra_free_kbytes 0
 write /proc/sys/vm/overcommit_memory 1
@@ -701,6 +704,9 @@ ro.com.google.lens.oem_camera_package=com.android.camera
 ro.miui.notch=1
 ro.product.mod_device=evergo_in_global
 persist.vendor.camera.privapp.list=com.android.camera
+ro.lmk.pressure_after_kill_min_score=201
+ro.lmk.lowmem_min_oom_score=201
+ro.lmk.camera_boost=true
 """
         with open(
             os.path.join(tmp_dir, "system.prop"), "w", encoding="utf-8", newline="\n"
@@ -717,6 +723,13 @@ chcon -R u:object_r:system_file:s0 "$MODDIR/system" 2>/dev/null
 resetprop -n ro.com.google.lens.oem_camera_package com.android.camera
 resetprop -n ro.miui.notch 1
 resetprop -n ro.product.mod_device evergo_in_global
+resetprop -n persist.vendor.camera.privapp.list com.android.camera
+resetprop -n ro.lmk.pressure_after_kill_min_score 201
+resetprop -n ro.lmk.lowmem_min_oom_score 201
+
+# Enforce memory headroom for camera snapshot burst buffers
+echo "256 256" > /proc/sys/vm/lowmem_reserve_ratio 2>/dev/null
+setprop lmkd.reinit 1
 """
         with open(
             os.path.join(tmp_dir, "post-fs-data.sh"),

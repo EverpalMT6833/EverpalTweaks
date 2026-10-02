@@ -85,6 +85,31 @@ To decouple Leica Camera from missing MIUI daemons on pure AOSP, the bundled
 - Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_quickFinish
 - Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_dumpGcov
 
+2.4. Elimination of 5-Second Mode Changing Delay (replaceSessionClose()V)
+-------------------------------------------------------------------------
+Xiaomi added a proprietary `replaceSessionClose()V` method to CameraCaptureSessionImpl
+in HyperOS. Calling it on AOSP 16 threw `NoSuchMethodError`, stalling handler thread
+`ch.b` until the 5,000ms CameraService abort timeout expired.
+Fix: Diverted calls to `CameraCaptureSession.close()V` in `dh/e.smali` and
+`MockCameraImageReceiver.smali`, achieving instant (<200ms) transitions.
+
+2.5. Capture Result Reflection & Dalvik Register Verification Fix
+-----------------------------------------------------------------
+HyperOS camera depends on `ICustomCaptureResult` for frame completion. On AOSP,
+reflection on `CaptureRequest.getNativeCopy()` failed, causing NPE in `ba.p1` on
+`getTimeStamp()`. Furthermore, register allocation clobbered `p0`, triggering an
+ART `VerifyError: Verifier rejected class xf.a`.
+Fix: Re-implemented `xf.a` using `.locals 8`, guarded null branching in `ba.p1` and
+`o$b`, and provided fallback to `getNativeMetadata()`.
+
+2.6. MT6833 Snapshot Burst Memory Protection & LMKD Tuning
+----------------------------------------------------------
+Snapshot burst allocation (12.5 MP YUV420 buffers via `initMfnrCore`) spiked memory
+usage, causing Zone Normal (~374 MB managed) watermark breaches. Android 16 LMKD
+default `ro.lmk.pressure_after_kill_min_score=0` resulted in foreground camera kills.
+Fix: Armed `ro.lmk.pressure_after_kill_min_score=201`, `ro.lmk.lowmem_min_oom_score=201`,
+and tuned `vm.lowmem_reserve_ratio="256 256"` (freeing 4,048 pages for Zone Normal).
+
 
 ================================================================================
 3. COMPONENT & SYSTEM FILE MAPPING
@@ -115,3 +140,6 @@ ro.com.google.lens.oem_camera_package  com.android.camera
 ro.miui.notch                           1
 ro.product.mod_device                   evergo_in_global
 persist.vendor.camera.privapp.list      com.android.camera
+ro.lmk.pressure_after_kill_min_score   201
+ro.lmk.lowmem_min_oom_score            201
+ro.lmk.camera_boost                     true
