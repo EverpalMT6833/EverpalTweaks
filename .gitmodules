@@ -64,3 +64,9 @@
 	branch = 12.1_A16
 	shallow = true
 	ignore = dirty
+[submodule "src/trees/recovery/xiaomi/everpal"]
+	path = src/trees/recovery/xiaomi/everpal
+	url = https://github.com/FrontlXOX/ofox_everpal_aosp.git
+	branch = Android12.1_Android16
+	shallow = true
+	ignore = dirty
