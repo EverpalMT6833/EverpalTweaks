@@ -19,7 +19,7 @@
 [submodule "src/trees/kernel/xiaomi/mt6833"]
 	path = src/trees/kernel/xiaomi/mt6833
 	url = https://github.com/FrontlXOX/android_kernel_xiaomi_mt6833.git
-	branch = lineage-24
+	branch = lineage-24.0
 	shallow = true
 	ignore = dirty
 [submodule "src/trees/hardware/mediatek"]

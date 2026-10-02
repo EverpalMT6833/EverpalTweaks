@@ -4,6 +4,7 @@ build/output/
 *.log
 ofox/
 build/
+temp/
 *.db-wal
 scratch/
 *.db-shm
