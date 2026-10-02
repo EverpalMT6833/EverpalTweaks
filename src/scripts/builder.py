@@ -651,6 +651,178 @@ exit 0
 
 
 # ==============================================================================
+# 5. LEICA CAMERA HYPEROS V6 MODULE
+# ==============================================================================
+def build_camera_module(root_dir: str) -> str:
+    template_meta = get_template_meta(root_dir)
+    tpl_dir = os.path.join(root_dir, "package", "templates", "LeicaCamera")
+    out_dir = os.path.join(root_dir, "package", "LeicaCamera", "package")
+    os.makedirs(out_dir, exist_ok=True)
+    pkg_zip = os.path.join(out_dir, "LeicaCamera.zip")
+
+    top_dir = os.path.dirname(root_dir)
+    apk_candidates = [
+        os.path.join(top_dir, "MiCam-signed.apk"),
+        os.path.join(root_dir, "MiCam-signed.apk"),
+        os.path.join(top_dir, "MiCam.apk"),
+        os.path.join(root_dir, "MiCam.apk"),
+    ]
+    apk_path = None
+    for c in apk_candidates:
+        if os.path.isfile(c):
+            apk_path = c
+            break
+
+    if not apk_path:
+        raise FileNotFoundError(
+            "MiCam-signed.apk or MiCam.apk not found for LeicaCamera build"
+        )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        meta_dir = os.path.join(tmp_dir, "META-INF", "com", "google", "android")
+        os.makedirs(meta_dir, exist_ok=True)
+
+        module_prop = """id=leica-camera-everpal
+name=Leica Camera HyperOS v6 (Everpal)
+version=v6.0.001240.1
+versionCode=600001
+author=FrontlXOX x himanshuksr0007 (Goku)
+description=HyperOS Leica Camera v6 port with Leica Authentic/Vibrant color profiles, Master portrait lenses, watermarks, and MediaTek MT6833 algorithm stubs for Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (everpal).
+"""
+        with open(
+            os.path.join(tmp_dir, "module.prop"), "w", encoding="utf-8", newline="\n"
+        ) as f:
+            f.write(module_prop)
+
+        system_prop = """# system.prop — Everpal Leica Camera Port
+# Author: FrontlXOX x himanshuksr0007 (Goku)
+
+ro.com.google.lens.oem_camera_package=com.android.camera
+ro.miui.notch=1
+ro.product.mod_device=evergo_in_global
+persist.vendor.camera.privapp.list=com.android.camera
+"""
+        with open(
+            os.path.join(tmp_dir, "system.prop"), "w", encoding="utf-8", newline="\n"
+        ) as f:
+            f.write(system_prop)
+
+        post_fs_data_sh = """#!/system/bin/sh
+MODDIR=${0%/*}
+
+# Set SELinux contexts on overlay files
+chcon -R u:object_r:system_file:s0 "$MODDIR/system" 2>/dev/null
+
+# Enforce camera properties
+resetprop -n ro.com.google.lens.oem_camera_package com.android.camera
+resetprop -n ro.miui.notch 1
+resetprop -n ro.product.mod_device evergo_in_global
+"""
+        with open(
+            os.path.join(tmp_dir, "post-fs-data.sh"),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as f:
+            f.write(post_fs_data_sh)
+
+        sepolicy_rule = """# SELinux rules for Leica Camera (com.android.camera)
+allow priv_app same_process_hal_file file { read open getattr execute execute_no_trans map }
+allow priv_app hal_misys_hwservice hwservice_manager find
+allow priv_app mtk_hal_bgs_hwservice hwservice_manager find
+allow priv_app hal_campostproc_hwservice hwservice_manager find
+allow priv_app vendor_camera_prop file { read open getattr map }
+allow priv_app qemu_hw_prop file { read open getattr map }
+allow camerahalserver sysfs_fpsgo dir search
+"""
+        with open(
+            os.path.join(tmp_dir, "sepolicy.rule"),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as f:
+            f.write(sepolicy_rule)
+
+        # system/priv-app/MiuiCamera/MiuiCamera.apk
+        cam_dir = os.path.join(tmp_dir, "system", "priv-app", "MiuiCamera")
+        os.makedirs(cam_dir, exist_ok=True)
+        shutil.copy2(apk_path, os.path.join(cam_dir, "MiuiCamera.apk"))
+
+        # system/etc permissions
+        etc_perm = os.path.join(tmp_dir, "system", "etc", "permissions")
+        etc_def_perm = os.path.join(tmp_dir, "system", "etc", "default-permissions")
+        etc_syscfg = os.path.join(tmp_dir, "system", "etc", "sysconfig")
+        os.makedirs(etc_perm, exist_ok=True)
+        os.makedirs(etc_def_perm, exist_ok=True)
+        os.makedirs(etc_syscfg, exist_ok=True)
+
+        tree_dir = os.path.join(root_dir, "trees", "vendor", "xiaomi", "camera")
+        shutil.copy2(
+            os.path.join(tpl_dir, "privapp-permissions-miuicamera.xml"), etc_perm
+        )
+        shutil.copy2(
+            os.path.join(tpl_dir, "default-permissions-miuicamera.xml"), etc_def_perm
+        )
+        shutil.copy2(
+            os.path.join(tpl_dir, "miuicamera-hiddenapi-package-whitelist.xml"),
+            etc_syscfg,
+        )
+        shutil.copy2(
+            os.path.join(tpl_dir, "public.libraries-xiaomi.txt"),
+            os.path.join(tmp_dir, "system", "etc"),
+        )
+
+        # system/lib64
+        lib64_dir = os.path.join(tmp_dir, "system", "lib64")
+        os.makedirs(lib64_dir, exist_ok=True)
+        tree_libs = os.path.join(tree_dir, "proprietary", "system", "lib64")
+        if os.path.isdir(tree_libs):
+            for lib in os.listdir(tree_libs):
+                shutil.copy2(os.path.join(tree_libs, lib), lib64_dir)
+
+        # Installer scripts
+        update_binary = """#!/sbin/sh
+# Magisk / KernelSU / APatch module installer stub
+umask 022
+SKIPUNZIP=1
+unzip -o "$ZIPFILE" -x 'META-INF/*' -d "$MODPATH" >&2
+set_perm_recursive "$MODPATH" 0 0 0755 0644
+set_perm "$MODPATH/post-fs-data.sh" 0 0 0755
+set_perm_recursive "$MODPATH/system/priv-app/MiuiCamera" 0 0 0755 0644
+set_perm_recursive "$MODPATH/system/lib64" 0 0 0755 0644
+exit 0
+"""
+        with open(
+            os.path.join(meta_dir, "update-binary"),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as f:
+            f.write(update_binary)
+
+        with open(
+            os.path.join(meta_dir, "updater-script"),
+            "w",
+            encoding="utf-8",
+            newline="\n",
+        ) as f:
+            f.write("# MAGISK\n")
+
+        with zipfile.ZipFile(pkg_zip, "w", zipfile.ZIP_DEFLATED) as z:
+            for root, _, files in os.walk(tmp_dir):
+                for f in files:
+                    full_path = os.path.join(root, f)
+                    rel_path = os.path.relpath(full_path, tmp_dir)
+                    z.write(full_path, rel_path)
+
+    size = os.path.getsize(pkg_zip)
+    print(
+        f"[+] Successfully built {pkg_zip} ({size} bytes / {size / (1024*1024):.2f} MB)"
+    )
+    return pkg_zip
+
+
+# ==============================================================================
 # CRC-32 & PACKAGE VALIDATION
 # ==============================================================================
 def verify_package(zip_path: str) -> bool:
@@ -694,6 +866,9 @@ def main():
         "--spatial", "-s", action="store_true", help="Build SpatialAudio.zip"
     )
     parser.add_argument(
+        "--camera", "-c", action="store_true", help="Build LeicaCamera.zip"
+    )
+    parser.add_argument(
         "--kernel", "-k", default=None, help="Path to compiled Image.gz (for Vulkan13)"
     )
     parser.add_argument(
@@ -709,25 +884,32 @@ def main():
     build_therm = args.thermal
     build_vulk = args.vulkan
     build_spatial = args.spatial
+    build_cam = args.camera
 
     # Default to building all if no specific target is given
-    if not (build_mem or build_therm or build_vulk or build_spatial) or args.all:
+    if not (
+        build_mem or build_therm or build_vulk or build_spatial or build_cam
+    ) or args.all:
         build_mem = True
         build_therm = True
         build_vulk = True
         build_spatial = True
+        build_cam = True
 
     print("=" * 60)
     print(" EverpalTweaks Master Module Builder & Validator")
     print("=" * 60)
 
-    total_steps = sum([build_mem, build_therm, build_vulk, build_spatial])
+    total_steps = sum(
+        [build_mem, build_therm, build_vulk, build_spatial, build_cam]
+    )
     step = 1
 
     mem_zip = None
     therm_zip = None
     vulk_zip = None
     spatial_zip = None
+    cam_zip = None
 
     if build_mem:
         print(f"\n[{step}/{total_steps}] Building MemoryMgmt.zip...")
@@ -754,6 +936,11 @@ def main():
         spatial_zip = build_spatial_module(REPO_ROOT)
         step += 1
 
+    if build_cam:
+        print(f"\n[{step}/{total_steps}] Building LeicaCamera.zip...")
+        cam_zip = build_camera_module(REPO_ROOT)
+        step += 1
+
     print("\n" + "=" * 60)
     print(" Verifying Packages (CRC-32 & Structure)")
     print("=" * 60)
@@ -770,6 +957,9 @@ def main():
 
     if build_spatial and spatial_zip:
         all_ok = all_ok and verify_package(spatial_zip)
+
+    if build_cam and cam_zip:
+        all_ok = all_ok and verify_package(cam_zip)
 
     if all_ok:
         print("\n[+] All requested modules successfully built and verified!\n")

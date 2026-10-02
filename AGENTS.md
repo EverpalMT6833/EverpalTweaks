@@ -13,12 +13,13 @@
 
 **EverpalTweaks** is an empirically audited, hardware-verified optimization suite developed to resolve custom ROM performance degradation, thermal throttling, and aggressive background process termination on the Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (`everpal`).
 
-This repository maintains four production-grade subsystems:
+This repository maintains five production-grade subsystems:
 
 1. **`MemoryMgmt/`** — Resolves MT6833 `Zone Normal` memory exhaustion, tunes Android 16 LMKD watermarks, and scales ZRAM to 3.58 GB LZ4 for zero direct reclaim stalls and 100% background app retention.
 2. **`ThermalMgmt/`** — Decrypts Xiaomi OpenSSL AES-128-CBC thermal profiles, decouples thermal regulation from missing proprietary `joyose`, maps `sconfig 10` (NoLimits profile with 55°C headroom), and uncaps Cortex-A76 Big cores (2.4 GHz) and Mali-G57 GPU clocks.
 3. **`Vulkan13/`** — Hybrid decoupled graphics stack deploying HyperOS 3.0 Valhall r49p1 Vulkan 1.3 ICD, companion linker shims (`libgpd1.so`, `libge2.so`), and certified Android 15/16 HAL manifests.
 4. **`SpatialAudio/`** — Eliminates wired headset spatial audio routing storms, serializes `immersive_out` mixPort concurrency (`maxOpenCount=1 maxActiveCount=1`), decouples Dolby DAP stream postprocessing, disables speaker spatializer and headtracking loops, and bypasses missing MTK parameter queries.
+5. **`LeicaCamera/`** — HyperOS Leica Camera v6 port with Leica Authentic/Vibrant color science, Master portrait lenses, watermarks, ABI packaging sanitization (`lib/arm64-v8a`), and MediaTek MT6833 algorithm engine stubs.
 
 ### Authorship & Collaborator Attribution
 
@@ -149,6 +150,25 @@ Applied via `src/package/SpatialAudio/patch.patch` and `src/package/SpatialAudio
 
 ---
 
+### E. Leica Camera Subsystem (`src/package/LeicaCamera/`)
+
+#### The Android 16 Bringup & Bytecode Bottlenecks
+Porting HyperOS Leica Camera v6 (`com.android.camera` v6.0.001240.1) to Android 16 on `everpal` encountered four critical runtime traps:
+1. **ABI Packaging Trap:** Stock packages packaged 64-bit native libraries under `lib/arm64/` instead of Android Bionic's canonical `lib/arm64-v8a/`, preventing runtime loading of `libcamera_algoup_jni.xiaomi.so` and camera postprocessors.
+2. **Android 16 `StreamConfigurationMap` Reflection Crash:** `ba.c.O(I)` used obsolete 21-argument reflection on hidden `CameraCharacteristics` fields (`SCALER_AVAILABLE_MIN_FRAME_DURATIONS`). Android 16 returns `null`, throwing an uncatchable `NullPointerException` inside ART during viewfinder initialization.
+3. **Uncompressed Media FileDescriptor Trap:** Android 16 `AssetManager.openNonAssetFd()` fails with `FileNotFoundException: This file can not be opened as a file descriptor; it is probably compressed` when `.mp4`, `.ogg`, or audio assets are deflated.
+4. **Missing Vendor Tags Null Dereference:** Standard AOSP `TotalCaptureResult` lacks Xiaomi vendor metadata tags, causing `ba.p1` (`onCaptureCompleted`) and `com.android.camera.b$b` to dereference null `ICustomCaptureResult` objects during photo capture.
+
+#### Production Solution
+Applied via `src/package/LeicaCamera/patch.patch` and `src/package/LeicaCamera/package/LeicaCamera.zip`:
+- **ABI Sanitization:** Repacked all native binaries into `lib/arm64-v8a/` and bundled MT6833 ISP shims (`libcamera_algoup_jni.xiaomi.so`, `libcamera_ispinterface_jni.xiaomi.so`, `libcamera_mianode_jni.xiaomi.so`, `libmtkisp_metadata_sys.so`, `libged_sys.so`).
+- **Smali Bytecode Surgery:** Diverted `ba.c.O(I)` to return `this.N()` (`CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP`), bypassing unexposed reflection constructors while preserving full sensor resolution maps.
+- **Zero-Compression Packaging:** Repacked all media files (`res/*.mp4`, `.ogg`, `.mp3`, `.wav`), native libraries, and `resources.arsc` as uncompressed `ZIP_STORED` (method 0), aligned to 4-byte boundaries with `zipalign -p -f 4`, and signed with v1/v2/v3 schemes.
+- **Capture Guarding:** Injected null-safe branching in `ba.p1` and `b$b` to gracefully handle non-MIUI capture results without crashing.
+- **Priv-App Deployment:** Deployed via KernelSU overlay into `/system/priv-app/MiuiCamera/` with hidden-API whitelists, privileged permissions, and SELinux policies (`allow priv_app same_process_hal_file`, `allow priv_app vendor_camera_prop`).
+
+---
+
 ## 4. Empirical Benchmark Records & Baselines
 
 These verified numbers represent the ground truth performance achievable with this repository:
@@ -254,13 +274,21 @@ EverpalTweaks/
         │   └── docs/                  # Architectural blueprint & vendor configuration guide
         │       └── vulkan-mgmt.txt    # Master Vulkan 1.3 hybrid architecture document
         │
-        └── SpatialAudio/             # 🎧 Spatial Audio Routing & Hardware Constraint Subsystem
-            ├── README.md             # Hardware audit, routing cascade analysis & HAL tunables
-            ├── patch.patch           # Unified diff for device_xiaomi_everpal
+        ├── SpatialAudio/             # 🎧 Spatial Audio Routing & Hardware Constraint Subsystem
+        │   ├── README.md             # Hardware audit, routing cascade analysis & HAL tunables
+        │   ├── patch.patch           # Unified diff for device_xiaomi_everpal
+        │   ├── package/
+        │   │   └── SpatialAudio.zip  # Flashable module (Author: FrontlXOX)
+        │   └── docs/                 # Architectural blueprint & technical breakdown
+        │       └── spatial-audio.txt # Master spatial audio routing document
+        │
+        └── LeicaCamera/              # 📷 HyperOS Leica Camera Subsystem
+            ├── README.md             # Packaging audits, ABI fixes & feature matrix
+            ├── patch.patch           # Unified diff for vendor_xiaomi_camera-everpal
             ├── package/
-            │   └── SpatialAudio.zip  # Flashable module (Author: FrontlXOX)
-            └── docs/                 # Architectural blueprint & technical breakdown
-                └── spatial-audio.txt # Master spatial audio routing document
+            │   └── LeicaCamera.zip   # Flashable root module (Author: FrontlXOX)
+            └── docs/                 # Architectural blueprint & integration guide
+                └── leica-camera.txt  # Master Leica Camera blueprint & JNI stubbing guide
 ```
 
 ---
@@ -282,6 +310,7 @@ python src/scripts/builder.py --memory
 python src/scripts/builder.py --thermal
 python src/scripts/builder.py --vulkan
 python src/scripts/builder.py --spatial
+python src/scripts/builder.py --camera
 ```
 
 _Note: Flashable zips are always written exclusively to `src/package/<Module>/package/`._

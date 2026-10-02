@@ -30,3 +30,8 @@ src/modules/ResukiSU/images/
 **/.state
 **/logs/
 src/modules/Mediatek/mtk-client/preloader_evergo.bin
+
+# Local APK staging & keystores
+*.apk
+*.idsig
+*.jks
