@@ -1,0 +1,117 @@
+================================================================================
+EVERPAL LEICA CAMERA MASTER ARCHITECTURAL BLUEPRINT & ROOT INTEGRATION GUIDE
+Prepared By: Shovit Dutta
+Author / Tuning: FrontlXOX x himanshuksr0007 (Goku)
+Date: October 1, 2026
+Target Device: Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (everpal)
+Model ID: Xiaomi 22031116AI
+Platform: MediaTek MT6833P Dimensity 810 (Mali-G57 MC2)
+Kernel: Linux 4.14.357-Aqua #3 SMP PREEMPT
+ROM: Android 16 (Project Infinity / LineageOS 23.0 Base - BP4A.251205.006)
+Target Repository: https://github.com/FrontlXOX/vendor_xiaomi_camera-everpal
+Flashable Module: package/LeicaCamera/package/LeicaCamera.zip
+================================================================================
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & LEICA CAMERA V6 STACK
+2. ROOT CAUSE ANALYSIS: THE PACKAGING & RUNTIME PITFALLS
+   2.1. The Fatal ABI Path Packaging Bug (lib/arm64 vs lib/arm64-v8a)
+   2.2. Stub Signature Stripping & Multi-Scheme (v1/v2/v3) Verification
+   2.3. Missing JNI Algorithm Stub Breakdown (algoup_stub.c symbols)
+   2.4. Priv-app Permissions & SELinux Constraints
+3. COMPONENT & SYSTEM FILE MAPPING
+4. SYSTEM PROPERTIES MATRIX
+5. FLASHABLE MODULE ARCHITECTURE (MAGISK / KERNELSU SYSTEMLESS OVERLAY)
+6. ROM VENDOR TREE INTEGRATION GUIDE
+
+
+================================================================================
+1. EXECUTIVE SUMMARY & LEICA CAMERA V6 STACK
+================================================================================
+The Leica Camera HyperOS v6 port (v6.0.001240.1 / 5_9_6-C) brings Xiaomi's flagship
+Leica photographic engine to the POCO M4 Pro 5G / Redmi Note 11S 5G (everpal).
+
+Core Features Enabled:
+- Leica Authentic: Natural color rendition with rich micro-contrast and vignetting.
+- Leica Vibrant: Saturated, dynamic tone mapping tuned for outdoor scenes.
+- Master Portrait Lens Modes: 35mm Documentary, 50mm Swirly Bokeh, 75mm Portrait,
+  and 90mm Soft Focus simulation.
+- Custom Leica Shutter Sound & Red-dot UI theme.
+- Dynamic Leica Watermark with focal length and aperture parameters.
+
+
+================================================================================
+2. ROOT CAUSE ANALYSIS: THE PACKAGING & RUNTIME PITFALLS
+================================================================================
+
+2.1. The Fatal ABI Path Packaging Bug (lib/arm64 vs lib/arm64-v8a)
+------------------------------------------------------------------
+In raw APK dumps, `libcamera_algoup_jni.xiaomi.so` was placed under `lib/arm64/`.
+On Android, the 64-bit ARM ABI directory name is strictly `arm64-v8a`.
+Directories named `arm64` are completely ignored by PackageManager.
+When `MiCamAlgoInterfaceJNI` attempted `System.loadLibrary("camera_algoup_jni.xiaomi")`,
+Android threw `UnsatisfiedLinkError` and crashed the app on startup.
+
+Fix: Relocated `libcamera_algoup_jni.xiaomi.so` to `lib/arm64-v8a/` inside the APK,
+ensuring Android's ClassLoader can resolve and link it.
+
+2.2. Stub Signature Stripping & Multi-Scheme (v1/v2/v3) Verification
+--------------------------------------------------------------------
+The original APK was signed only under v3 with a placeholder certificate
+`CN=Weather Stub`. This caused signature collisions and installation rejections
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`).
+
+Fix: Stripped old `META-INF/` signature entries, performed 4-byte/16KB page alignment
+via `zipalign -p -f 4`, and signed using `apksigner` with a dedicated `CN=MiuiCamera`
+certificate supporting v1, v2, and v3 signature schemes.
+
+2.3. Missing JNI Algorithm Stub Breakdown (algoup_stub.c symbols)
+-----------------------------------------------------------------
+To decouple Leica Camera from missing MIUI daemons on pure AOSP, the bundled
+`libcamera_algoup_jni.xiaomi.so` stubs out all required native methods:
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_init
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_deInit
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_getVersionCode
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_setMiViInfo
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_createSessionByOutputConfigurations
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_createSessionWithSurfaces
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_destroySession
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_flush
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_preProcess
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_processFrame
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_processFrameWithSync
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_quickFinish
+- Java_com_xiaomi_engine_MiCamAlgoInterfaceJNI_dumpGcov
+
+
+================================================================================
+3. COMPONENT & SYSTEM FILE MAPPING
+================================================================================
+The root flashable module places files into:
+- `/system/priv-app/MiuiCamera/MiuiCamera.apk` (Signed Leica Camera APK)
+- `/system/etc/permissions/privapp-permissions-miuicamera.xml`
+- `/system/etc/default-permissions/default-permissions-miuicamera.xml`
+- `/system/etc/sysconfig/miuicamera-hiddenapi-package-whitelist.xml`
+- `/system/etc/public.libraries-xiaomi.txt`
+- `/system/lib64/libcamera_algoup_jni.xiaomi.so`
+- `/system/lib64/libcamera_mianode_jni.xiaomi.so`
+- `/system/lib64/libcamera_ispinterface_jni.xiaomi.so`
+- `/system/lib64/libged_kpi.so`
+- `/system/lib64/libged_sys.so`
+- `/system/lib64/libmtkisp_metadata_sys.so`
+- `/system/lib64/vendor.mediatek.hardware.camera.isphal@1.0.so`
+
+
+================================================================================
+4. SYSTEM PROPERTIES MATRIX
+================================================================================
+The following properties are injected via `system.prop` and `post-fs-data.sh`:
+
+Property                                Value
+--------------------------------------  ---------------------------------------
+ro.com.google.lens.oem_camera_package  com.android.camera
+ro.miui.notch                           1
+ro.product.mod_device                   evergo_in_global
+persist.vendor.camera.privapp.list      com.android.camera

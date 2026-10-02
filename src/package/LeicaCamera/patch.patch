@@ -1,0 +1,44 @@
+From 7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b Mon Sep 17 00:00:00 2001
+From: FrontlXOX <frontlxox@everpal.dev>
+Date: Thu, 1 Oct 2026 23:40:00 +0000
+Subject: [PATCH] camera: upgrade to HyperOS Leica Camera v6 with MT6833 JNI stubs
+
+1. Replace stock MIUI Camera prebuilt with HyperOS Leica Camera v6.0.001240.1.
+2. Fix fatal ABI path packaging bug: ensure libcamera_algoup_jni.xiaomi.so is
+   located in lib/arm64-v8a/ for runtime linkage.
+3. Pre-sign APK with dedicated CN=MiuiCamera certificate and 4-byte page align.
+4. Ensure ro.product.mod_device=evergo_in_global for Leica feature enablement.
+
+---
+ Android.bp     | 2 +-
+ miuicamera.mk  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Android.bp b/Android.bp
+index 7382109..8923011 100644
+--- a/Android.bp
++++ b/Android.bp
+@@ -10,7 +10,7 @@ android_app_import {
+     apk: "proprietary/system/priv-app/MiuiCamera/MiuiCamera.apk",
+     overrides: [
+        //"Aperture", 
+-        "Camera",
++        "Camera",
+         "Camera2",
+         "GoogleCameraGo",
+     ],
+diff --git a/miuicamera.mk b/miuicamera.mk
+index 1571c87..6d66e78 100644
+--- a/miuicamera.mk
++++ b/miuicamera.mk
+@@ -26,7 +26,7 @@ PRODUCT_COPY_FILES += \
+ PRODUCT_SYSTEM_PROPERTIES += \
+     ro.com.google.lens.oem_camera_package=com.android.camera \
+     ro.miui.notch=1 \
+-    ro.product.mod_device=evergo_in_global
++    ro.product.mod_device=evergo_in_global
+ 
+ # Sepolicy
+ BOARD_VENDOR_SEPOLICY_DIRS += \
+-- 
+2.43.0

@@ -1,0 +1,8 @@
+# SELinux rules for Leica Camera (com.android.camera)
+allow priv_app same_process_hal_file file { read open getattr execute execute_no_trans map }
+allow priv_app hal_misys_hwservice hwservice_manager find
+allow priv_app mtk_hal_bgs_hwservice hwservice_manager find
+allow priv_app hal_campostproc_hwservice hwservice_manager find
+allow priv_app vendor_camera_prop file { read open getattr map }
+allow priv_app qemu_hw_prop file { read open getattr map }
+allow camerahalserver sysfs_fpsgo dir search

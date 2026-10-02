@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <privapp-permissions package="com.android.camera">
+        <permission name="android.permission.CAMERA" /> 
+        <permission name="android.permission.MANAGE_MEDIA" />
+        <permission name="android.permission.WRITE_SECURE_SETTINGS" />
+        <permission name="android.permission.INTERACT_ACROSS_USERS" />
+        <permission name="android.permission.START_ACTIVITIES_FROM_BACKGROUND" />
+        <permission name="android.permission.SYSTEM_CAMERA" />
+        <permission name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+        <permission name="android.permission.HIDE_OVERLAY_WINDOWS" />
+        <permission name="android.permission.CONTROL_DISPLAY_BRIGHTNESS" />
+        <permission name="android.permission.MODIFY_AUDIO_ROUTING" />
+        <permission name="android.permission.STATUS_BAR" />
+
+        <deny-permission name="android.permission.WRITE_MEDIA_STORAGE" />
+        <deny-permission name="android.permission.UPDATE_DEVICE_STATS" />
+        <deny-permission name="android.permission.MANAGE_APP_OPS_MODES" />
+        <deny-permission name="android.permission.LOG_COMPAT_CHANGE" />
+        <deny-permission name="android.permission.READ_COMPAT_CHANGE_CONFIG" />
+
+    </privapp-permissions>
+</permissions>
