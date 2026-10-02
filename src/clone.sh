@@ -15,6 +15,7 @@ DO_SYNC="false"
 DEPTH="1"
 declare -a DEFAULT_TREES=(
     "src/trees/device/mediatek/sepolicy_vndr|https://github.com/FrontlXOX/android_device_mediatek_sepolicy_vndr.git|lineage-24.0"
+    "src/trees/recovery/xiaomi/everpal|https://github.com/FrontlXOX/ofox_everpal_aosp.git|Android12.1_Android16"
     "src/trees/vendor/mediatek/ims|https://github.com/FrontlXOX/android_vendor_mediatek_ims.git|android-16-qpr2"
     "src/trees/vendor/xiaomi/camera|https://github.com/FrontlXOX/vendor_xiaomi_camera-everpal.git|lineage-23.2"
     "src/trees/kernel/xiaomi/mt6833|https://github.com/FrontlXOX/android_kernel_xiaomi_mt6833.git|lineage-24"

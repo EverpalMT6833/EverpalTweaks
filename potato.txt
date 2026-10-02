@@ -37,4 +37,5 @@ git clone --depth 1 --single-branch --no-tags -b lineage-23.2   https://github.c
 git clone --depth 1 --single-branch --no-tags -b lineage-23.0   https://github.com/FrontlXOX/android_hardware_mediatek.git                src/trees/hardware/mediatek
 git clone --depth 1 --single-branch --no-tags -b lineage-23.0   https://github.com/FrontlXOX/android_hardware_xiaomi.git                  src/trees/hardware/xiaomi
 git clone --depth 1 --single-branch --no-tags -b gold-s-oss     https://github.com/FrontlXOX/donor_5.10_kernel_xiaomi_gold.git            src/trees/kernel-5.10
+git clone --depth 1 --single-branch --no-tags -b Android12.1_Android16 https://github.com/FrontlXOX/ofox_everpal_aosp.git               src/trees/recovery/xiaomi/everpal
 git clone --depth 1 --single-branch --no-tags -b main           https://github.com/georgiynesterov/lk-unlock.git                          src/modules/Mediatek/lk-unlocker
