@@ -5,7 +5,7 @@ Subject: [PATCH] everpal: refine memory management to v7 production architecture
 
 - lmkd: raise thrashing_limit 150 -> 300 for multi-core ray tracing burst tolerance
 - lmkd: lower swap_free_low_percentage 5 -> 2 to eliminate emergency kill escalation
-- lmkd: raise swap_util_max 85 -> 90
+- lmkd: raise swap_util_max 85 -> 100
 - lmkd: set psi_partial_stall_ms=250 and psi_complete_stall_ms=800
 - lmkd: add kill_timeout_ms=250 for precise evaluation pacing
 - init: set watermark_scale_factor=20 to prevent Zone Normal false-positive breaches
@@ -33,7 +33,7 @@ index caa3a44..f19e782 100644
  ro.lmk.downgrade_pressure=80
 -ro.lmk.swap_util_max=85
 -ro.lmk.swap_free_low_percentage=5
-+ro.lmk.swap_util_max=90
++ro.lmk.swap_util_max=100
 +ro.lmk.swap_free_low_percentage=2
  ro.lmk.kill_heaviest_task=false
  

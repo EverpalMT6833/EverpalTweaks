@@ -81,11 +81,15 @@ ro.lmk.use_new_strategy=true
 ro.lmk.thrashing_limit=300
 ro.lmk.thrashing_limit_decay=15
 ro.lmk.downgrade_pressure=80
-ro.lmk.swap_util_max=90
+ro.lmk.swap_util_max=100
 ro.lmk.swap_free_low_percentage=2
 ro.lmk.kill_heaviest_task=false
 ro.lmk.pressure_after_kill_min_score=201
 ro.lmk.lowmem_min_oom_score=201
+persist.device_config.lmkd_native.swap_util_max=100
+persist.device_config.lmkd_native.swap_free_low_percentage=2
+persist.device_config.lmkd_native.lowmem_min_oom_score=201
+persist.device_config.lmkd_native.pressure_after_kill_min_score=201
 
 # ── PSI tuning ─────────────────────────────────────────────────────────────
 ro.lmk.psi_partial_stall_ms=250
@@ -161,6 +165,13 @@ write /proc/sys/vm/page-cluster 0
 
 # Dynamic memory compaction at boot
 write /proc/sys/vm/compact_memory 1
+
+# Ensure LMKD does not murder foreground apps on swap utilization
+setprop persist.device_config.lmkd_native.swap_util_max 100
+setprop persist.device_config.lmkd_native.swap_free_low_percentage 2
+setprop persist.device_config.lmkd_native.lowmem_min_oom_score 201
+setprop persist.device_config.lmkd_native.pressure_after_kill_min_score 201
+setprop lmkd.reinit 1
 
 # 3. Dynamic ZRAM Reconfiguration
 if [ -b /dev/block/zram0 ]; then

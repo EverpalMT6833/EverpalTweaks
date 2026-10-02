@@ -183,7 +183,7 @@ are vastly superior under the module configuration.
 | ro.lmk.thrashing_limit            | 30       | 150            | 300 (Burst Tolerant)|
 | ro.lmk.thrashing_limit_decay      | 10       | 10             | 15                  |
 | ro.lmk.kill_timeout_ms            | 10 ms    | [unset/10ms]   | 250 ms (Pacing)     |
-| ro.lmk.swap_util_max              | 100%     | 85%            | 90%                 |
+| ro.lmk.swap_util_max              | 100%     | 85%            | 100% (No Premature Kill)|
 | ro.lmk.downgrade_pressure         | 100      | 80             | 80                  |
 | ro.lmk.kill_heaviest_task         | true     | false          | false (Priority OOM)|
 | ro.lmk.psi_partial_stall_ms       | 70 ms    | 200 ms         | 250 ms              |
@@ -333,7 +333,7 @@ ro.lmk.use_new_strategy=true
 ro.lmk.thrashing_limit=300
 ro.lmk.thrashing_limit_decay=15
 ro.lmk.downgrade_pressure=80
-ro.lmk.swap_util_max=90
+ro.lmk.swap_util_max=100
 ro.lmk.swap_free_low_percentage=2
 ro.lmk.kill_heaviest_task=false
 
@@ -408,7 +408,7 @@ index caa3a44..f19e782 100644
  ro.lmk.downgrade_pressure=80
 -ro.lmk.swap_util_max=85
 -ro.lmk.swap_free_low_percentage=5
-+ro.lmk.swap_util_max=90
++ro.lmk.swap_util_max=100
 +ro.lmk.swap_free_low_percentage=2
  ro.lmk.kill_heaviest_task=false
  

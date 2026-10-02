@@ -143,7 +143,7 @@ Through extensive multi-day kernel diagnostics and stress testing across Geekben
 | **`ro.lmk.thrashing_limit`**          |    30     |          150           |         **`300`**          | Eliminates thrashing panic during 3D/ray tracing     |
 | **`ro.lmk.thrashing_limit_decay`**    |    10     |           10           |          **`15`**          | Settles pressure score rapidly after spikes          |
 | **`ro.lmk.kill_timeout_ms`**          |   10 ms   |     [unset / 10ms]     |        **`250 ms`**        | Paces kills to allow freed memory to register        |
-| **`ro.lmk.swap_util_max`**            |   100%    |          85%           |         **`90%`**          | Full swap utilization without premature cutoff       |
+| **`ro.lmk.swap_util_max`**            |   100%    |          85%           |         **`100%`**         | Full swap utilization; bypasses toxic foreground kills|
 | **`ro.lmk.downgrade_pressure`**       |    100    |           80           |          **`80`**          | Threshold for downgrading pressure events            |
 | **`ro.lmk.kill_heaviest_task`**       |   true    |         false          |        **`false`**         | Kills strictly by OOM priority, not RSS footprint    |
 | **`ro.lmk.psi_partial_stall_ms`**     |   70 ms   |         200 ms         |        **`250 ms`**        | Tolerates transient burst memory pressure            |
@@ -209,7 +209,7 @@ ro.lmk.use_new_strategy=true
 ro.lmk.thrashing_limit=300
 ro.lmk.thrashing_limit_decay=15
 ro.lmk.downgrade_pressure=80
-ro.lmk.swap_util_max=90
+ro.lmk.swap_util_max=100
 ro.lmk.swap_free_low_percentage=2
 ro.lmk.kill_heaviest_task=false
 
