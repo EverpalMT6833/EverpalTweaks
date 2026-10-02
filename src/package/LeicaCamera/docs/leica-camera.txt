@@ -8,7 +8,7 @@ Model ID: Xiaomi 22031116AI
 Platform: MediaTek MT6833P Dimensity 810 (Mali-G57 MC2)
 Kernel: Linux 4.14.357-Aqua #3 SMP PREEMPT
 ROM: Android 16 (Project Infinity / LineageOS 23.0 Base - BP4A.251205.006)
-Target Repository: https://github.com/FrontlXOX/vendor_xiaomi_camera-everpal
+Target Repository: https://github.com/EverpalMT6833/vendor_xiaomi_camera-everpal
 Flashable Module: package/LeicaCamera/package/LeicaCamera.zip
 ================================================================================
 

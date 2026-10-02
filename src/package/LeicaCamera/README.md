@@ -5,7 +5,7 @@
 > **Target Device:** Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (`everpal`)
 > **Hardware:** MediaTek Dimensity 810 (MT6833P / MT6833 family, 2x A76 @ 2.4 GHz + 6x A55 @ 2.0 GHz, Mali-G57 MC2)
 > **Kernel & OS:** Linux `4.14.357-Aqua #3` | Android 16 (Project Infinity - `BP4A.251205.006`)
-> **Target Repository:** [vendor_xiaomi_camera-everpal](https://github.com/FrontlXOX/vendor_xiaomi_camera-everpal)
+> **Target Repository:** [vendor_xiaomi_camera-everpal](https://github.com/EverpalMT6833/vendor_xiaomi_camera-everpal)
 > **Flashable Module:** `package/LeicaCamera/package/LeicaCamera.zip`
 
 ---
