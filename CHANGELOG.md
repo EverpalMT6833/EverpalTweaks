@@ -3,6 +3,24 @@
 All notable changes to **EverpalTweaks** are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to Semantic Versioning.
 
+## [v1.3.0] - 2026-10-03
+
+### 🏆 Milestone Achievements
+
+- **HyperOS Leica Camera v6 Android 16 Bringup & Fluidity Optimization:**
+  - **Mode Switching Latency Elimination:**
+    - Decoupled MediaTek MIVI offline processing loop by patching `OfflineSessionManager.isSessionOffline()` to unconditionally return `true`, completely terminating the recurring 10ms polling loop (`postDelayed(10ms)`) that accumulated multi-hundred-millisecond UI freezes on AOSP.
+    - Neutralized heavy 2-pass fullscreen GPU Gaussian blur shader and framebuffer snapshot readback (`switchModeAnimRender`) on ARM Mali-G57 MC2 by enforcing `isNeedBlurAnimation() = false` in `StartControl` and `FragmentModeSelector`, delivering instant, stutter-free viewport cuts and swiping between Photo, Video, Portrait, Documents, and Night modes.
+    - Zeroed accessibility post-delayed timer (`0x1f4` -> `0x0`) in `FragmentModeSelector`, accelerating interactive mode changes to sub-250ms transitions.
+  - **Auto-Exposure (AE) Dark Viewfinder Resolution:**
+    - Routed MediaTek 3A engine (`lib3a.ae.stat.so`) to CPU-based AE statistics computation via `vendor.debug.ae.stat.type=2`, restoring crystal-clear natural scene exposure across all sensor viewports without CCU hangs.
+  - **Night & Photo Shutter Decoupling:**
+    - Patched `NightModule.smali` (`getRawCallbackType = 0x10`) and guarded null Surface references in `ba/u1.smali`, routing capture results cleanly through `PreviewSaveRequest` and storing full-resolution JPEGs with complete Xiaomi EXIF tags.
+  - **Zero-Compression APK Alignment:**
+    - Rebuilt `MiuiCamera.apk` with uncompressed `ZIP_STORED` DEX files, resources, and native libraries, 4-byte zipalign, and APK Signature Scheme v3.
+
+---
+
 ## [v1.2.0] - 2026-09-20
 
 ### 🏆 Milestone Achievements
