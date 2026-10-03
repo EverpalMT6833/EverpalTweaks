@@ -1,7 +1,7 @@
 # Everpal Leica Camera Port Master Blueprint
 
 > **Prepared By:** Shovit Dutta
-> **Author / Tuning:** FrontlXOX x himanshuksr0007 (Goku)
+> **Author / Tuning:** FrontlXOX
 > **Target Device:** Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (`everpal`)
 > **Hardware:** MediaTek Dimensity 810 (MT6833P / MT6833 family, 2x A76 @ 2.4 GHz + 6x A55 @ 2.0 GHz, Mali-G57 MC2)
 > **Kernel & OS:** Linux `4.14.357-Aqua #3` | Android 16 (Project Infinity - `BP4A.251205.006`)
@@ -113,7 +113,7 @@ The flashable module is built via `scripts/builder.py --camera` (or `--all`) and
 - **Module ID:** `leica-camera-everpal`
 - **Module Name:** `Leica Camera HyperOS v6 (Everpal)`
 - **Version:** `v6.0.001240.1 (600001)`
-- **Author:** `FrontlXOX x himanshuksr0007 (Goku)`
+- **Author:** `FrontlXOX`
 
 ### Flash via ADB:
 ```bash

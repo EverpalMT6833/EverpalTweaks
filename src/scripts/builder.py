@@ -559,7 +559,7 @@ description=Spatial audio routing fix for Xiaomi Everpal (MT6833 / Dimensity 810
             f.write(module_prop)
 
         system_prop = """# system.prop — Everpal Spatial Audio & Routing Fix
-# Author: FrontlXOX x himanshuksr0007 (Goku)
+# Author: FrontlXOX
 
 # Spatial Audio Routing & Head-Tracking Constraints
 persist.vendor.audio.spatializer.speaker_enabled=false
@@ -715,7 +715,7 @@ def build_camera_module(root_dir: str) -> str:
 name=Leica Camera HyperOS v6 (Everpal)
 version=v6.0.001240.1
 versionCode=600001
-author=FrontlXOX x himanshuksr0007 (Goku)
+author=FrontlXOX
 description=HyperOS Leica Camera v6 port with Leica Authentic/Vibrant color profiles, Master portrait lenses, watermarks, and MediaTek MT6833 algorithm stubs for Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (everpal).
 """
         with open(
@@ -724,7 +724,7 @@ description=HyperOS Leica Camera v6 port with Leica Authentic/Vibrant color prof
             f.write(module_prop)
 
         system_prop = """# system.prop — Everpal Leica Camera Port
-# Author: FrontlXOX x himanshuksr0007 (Goku)
+# Author: FrontlXOX
 
 ro.com.google.lens.oem_camera_package=com.android.camera
 ro.miui.notch=1

@@ -1,7 +1,7 @@
 ================================================================================
 EVERPAL LEICA CAMERA MASTER ARCHITECTURAL BLUEPRINT & ROOT INTEGRATION GUIDE
 Prepared By: Shovit Dutta
-Author / Tuning: FrontlXOX x himanshuksr0007 (Goku)
+Author / Tuning: FrontlXOX
 Date: October 1, 2026
 Target Device: Xiaomi POCO M4 Pro 5G / Redmi Note 11S 5G (everpal)
 Model ID: Xiaomi 22031116AI
