@@ -210,8 +210,14 @@ class DAXFlash(metaclass=LogBase):
         return data
 
     def status(self):
-        hdr = self.usbread(4 + 4 + 4)
-        magic, datatype, length = unpack("<III", hdr)
+        try:
+            hdr = self.usbread(4 + 4 + 4)
+            if not hdr or len(hdr) < 12:
+                return -1
+            magic, datatype, length = unpack("<III", hdr)
+        except Exception as err:
+            self.error("Status error: " + str(err))
+            return -1
         if magic != 0xFEEEEEEF:
             self.error("Status error: Wrong magic")
             return -1

@@ -29,6 +29,14 @@ def main() -> int:
         [sys.executable, str(mtk_entry), "e", "metadata,userdata"],
         cwd=str(MTK_DIR),
     ).returncode
+
+    state_file = MTK_DIR / ".state"
+    if state_file.is_file():
+        try:
+            state_file.unlink()
+        except OSError:
+            pass
+
     if rc != 0:
         print("[-] erase failed", file=sys.stderr)
         pause()

@@ -27,30 +27,45 @@ def pause() -> None:
         pass
 def main(argv: list) -> int:
     mtk_entry = resolve_mtk_entry()
-    patched_lk = Path(argv[1]) if len(argv) > 1 else (UNLOCK_DIR / "lk_patched_evergo.img")
+    if len(argv) > 1:
+        patched_lk = Path(argv[1])
+    else:
+        candidates = [
+            UNLOCK_DIR / "lk_patched_evergo.img",
+            UNLOCK_DIR / "lk_patched.img",
+        ]
+        patched_lk = next((c for c in candidates if c.is_file()), candidates[0])
+
     if not patched_lk.is_file():
-        print(f"[-] Patched LK not found: {patched_lk}", file=sys.stderr)
-        print(f'    From the lk-unlocker dir run: {sys.executable} lk-unlock.py patch <lk.img> -o "{patched_lk}"',
+        print(f"[-] Patched LK not found in {UNLOCK_DIR}", file=sys.stderr)
+        print(f"    Expected: {patched_lk.name}", file=sys.stderr)
+        print(f'    From the lk-unlocker dir run: {sys.executable} lk-unlock.py patch <lk.img> -o lk_patched_evergo.img',
               file=sys.stderr)
         pause()
         return 1
+
     print("[*] Stage 2/3: flash patched LK to lk_a + lk_b (phone must be in BROM mode)")
+    print(f"[*] Flashing image: {patched_lk}")
     rc = subprocess.run(
         [sys.executable, str(mtk_entry), "w", "lk_a,lk_b", f"{patched_lk},{patched_lk}"],
         cwd=str(MTK_DIR),
     ).returncode
+
+    state_file = MTK_DIR / ".state"
+    if state_file.is_file():
+        try:
+            state_file.unlink()
+        except OSError:
+            pass
+
     if rc != 0:
         print("[-] LK flash failed", file=sys.stderr)
         pause()
         return 1
-    rc = subprocess.run(
-        [sys.executable, str(mtk_entry), "reset"],
-        cwd=str(MTK_DIR),
-    ).returncode
-    if rc != 0:
-        print("[!] auto-reset failed, reboot to fastboot manually: Power + Vol Down")
-    print("[+] Stage 2 done. Disconnect, boot to fastboot (Power + Vol Down), then run:")
-    print("    python bl-unlock_3.py")
+
+    print("[+] Stage 2 done: patched LK flashed to lk_a and lk_b.")
+    print("    Next: disconnect USB, boot to fastboot (Power + Vol Down), then run:")
+    print("      python bl-unlock_3.py")
     pause()
     return 0
 if __name__ == "__main__":

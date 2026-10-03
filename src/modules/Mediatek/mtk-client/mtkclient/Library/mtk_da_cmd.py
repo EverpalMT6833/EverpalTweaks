@@ -78,8 +78,16 @@ class DA_handler(metaclass=LogBase):
             mtk.preloader.init()
         else:
             if mtk.port.cdc.connected and os.path.exists(".state"):
-                info = mtk.daloader.reinit()
-                return mtk
+                try:
+                    info = mtk.daloader.reinit()
+                    return mtk
+                except Exception:
+                    if os.path.exists(".state"):
+                        try:
+                            os.remove(".state")
+                        except OSError:
+                            pass
+                    mtk.preloader.init()
         if mtk.config.target_config is None:
             self.info("Please disconnect, start mtkclient and reconnect.")
             return None
